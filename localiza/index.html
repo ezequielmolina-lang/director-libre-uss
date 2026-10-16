@@ -891,20 +891,31 @@ function afinar(){
   }).then(function(r){ return r.json().then(function(d){ return { ok: r.ok, d: d }; }); })
     .then(function(res){
       if (!res.ok || !res.d.bloques) throw new Error(res.d.error || "sin respuesta");
-      /* Solo se tocan las filas que el director escribió a mano y no cambió. */
-      var porTexto = {};
-      res.d.bloques.forEach(function(x){ porTexto[(x.texto || "").toLowerCase().slice(0, 30)] = x; });
-      var tocadas = 0;
-      items.forEach(function(it){
-        if (!it.libre || it.fijo) return;
-        var x = porTexto[it.texto.toLowerCase().slice(0, 30)];
-        if (!x || !x.tipo) return;
-        it.tipo = x.tipo; it.porque = (x.porque || "") + ", según la IA"; tocadas++;
-      });
+      /* SE EMPAREJA POR POSICION, NO POR TEXTO. La IA reescribe lo que le
+         mandan: «Fui al municipio a buscar unas firmas» le volvió como «Ir al
+         municipio a buscar firmas», y emparejando por texto no encontraba
+         ninguna fila y no clasificaba nada, en silencio. Devuelve una fila por
+         cada una que se le manda y en el mismo orden; si eso no se cumple, no
+         se toca nada, porque emparejar mal es peor que no emparejar.
+
+         SOLO SE TOCAN LAS FILAS QUE EL DIRECTOR ESCRIBIO. Las del catálogo
+         llevan la clasificación del libro y dejarla a merced del modelo
+         rompería la comparación entre directores, que es lo que hace que el
+         número del grupo signifique algo. */
+      var bl = res.d.bloques, tocadas = 0;
+      if (bl.length === items.length) {
+        items.forEach(function(it, i){
+          if (!it.libre || it.fijo || !bl[i] || !bl[i].tipo) return;
+          it.tipo = bl[i].tipo;
+          it.porque = (bl[i].porque || "").slice(0, 70) + ", según la IA";
+          tocadas++;
+        });
+      }
       analisisIA = res.d.analisis || "";
       pintarBloques();
       $("estado-ia").textContent = tocadas
-        ? "Clasificó lo que escribiste. El resto queda como lo trae el libro."
+        ? "Clasificó las " + tocadas + " que escribiste. El resto queda como lo " +
+          "trae el libro."
         : "Miró tu día. Lo vas a ver en la radiografía.";
       b.textContent = "✨ Mirar de nuevo";
     }).catch(function(e){
