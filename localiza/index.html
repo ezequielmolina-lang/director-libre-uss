@@ -81,12 +81,22 @@ button:focus-visible{outline:3px solid var(--ambar);outline-offset:2px}
 .dur{margin-left:auto;font-family:var(--mono);font-size:13px;font-weight:700;
   border:2px solid var(--linea);border-radius:99px;padding:6px 12px;background:#fff;
   color:var(--texto2);cursor:pointer}
+.reloj{display:inline-flex;align-items:stretch;border:1px solid var(--linea);
+  border-radius:999px;overflow:hidden;background:#fff}
+.reloj b{display:flex;align-items:center;padding:0 10px;font-size:14px;font-weight:800;
+  color:var(--texto);min-width:62px;justify-content:center;font-variant-numeric:tabular-nums}
+.reloj .paso{border:0;background:var(--suave);color:var(--texto);font:inherit;
+  font-size:18px;font-weight:800;line-height:1;padding:7px 13px;cursor:pointer}
+.reloj .paso:active{background:var(--linea)}
 .leyenda{font-size:13px;color:var(--texto2);margin-bottom:14px}
 /* El aviso del dictado y el del tiempo sin contar. Los dos dicen algo que el
    director tiene que leer antes de creerle al numero, asi que van con borde
    ambar y no como nota al pie. */
 /* Las actividades frecuentes, con el color de la categoría que les ponemos.
    Botones grandes porque esto se usa parado y con el pulgar. */
+.pasos{margin:14px 0 0;padding-left:22px}
+.pasos li{font-size:15px;line-height:1.55;color:var(--texto2);margin-bottom:6px}
+.pasos li b{color:var(--texto)}
 .rapidas h3{font:inherit;font-size:12px;font-weight:800;letter-spacing:.06em;
   text-transform:uppercase;color:var(--texto2);margin:18px 0 8px}
 .rapidas h3:first-child{margin-top:14px}
@@ -199,10 +209,16 @@ footer a{color:var(--naranja)}
 
 <section class="paso" id="p1" hidden>
   <h2 id="t-relato">3. Arma tu día, bloque por bloque</h2>
-  <p class="ay">Toca lo que hiciste y ajusta los minutos. Eso es todo: la
-  probabilidad de que cada cosa impacte el aprendizaje <b>no la decides tú</b>, la
-  trae el libro, y lo que escribas aparte lo clasifica la IA. <b>No te juzgues,
-  solo observa.</b></p>
+  <ol class="pasos">
+    <li><b>Toca lo que hiciste.</b> Cada toque lo agrega a la lista de abajo con un
+    tiempo típico. Si lo hiciste dos veces, tócalo dos veces.</li>
+    <li><b>Arregla el tiempo</b> con el − y el + de cada fila.</li>
+    <li>Cuando la barra llegue al final de tu jornada, toca <b>Ver mi
+    radiografía</b>.</li>
+  </ol>
+  <p class="ay">La probabilidad de que cada cosa impacte el aprendizaje <b>no la
+  decides tú</b>: la trae el libro, igual para todos. <b>No te juzgues, solo
+  observa.</b></p>
 
   <div class="rapidas" id="rapidas"></div>
 
@@ -220,11 +236,8 @@ footer a{color:var(--naranja)}
   estás de acuerdo con alguna, tócala.</div>
   <div id="bloques"></div>
 
-  <div class="fila" id="fila-ia" style="margin-bottom:14px" hidden>
-    <button id="afinar">✨ Qué ve la IA en mi día</button>
-    <span class="nota" id="estado-ia" style="margin:0"></span>
-  </div>
   <div class="ejemplo" id="aviso-nombres" hidden></div>
+  <p class="nota" id="estado-ia"></p>
 
   <div class="ejemplo">
     <b>Un aviso del libro:</b> casi todos subestimamos cuánto tiempo pasamos en el
@@ -552,7 +565,7 @@ function pintarAvance(){
               " más que tus horas de contrato. Así es el oficio."
             : "Llevas <b>" + rotulo(suma) + "</b>: tu jornada completa."));
   $("leyenda-bloques").hidden = !items.length;
-  $("fila-ia").hidden = !items.length;
+
 }
 function rotulo(m){
   if (m < 60) return m + " min";
@@ -579,7 +592,13 @@ function pintarBloques(){
       'aria-label="Corregir esta línea">' + esc(it.texto) + "</p>" +
       '<p class="porque">' + esc(it.porque || "") + "</p>" +
       '<div class="tags">' + tags +
-      '<button class="dur" data-dur="' + i + '">' + rotulo(it.min) + "</button>" +
+      /* EL TIEMPO SE VE QUE ES UN CONTROL. Antes era un botón que decía «30 min»
+         y que al tocarlo pasaba a 45: el que no lo tocaba por casualidad nunca
+         se enteraba de que se podía cambiar, y entregaba el día con los tiempos
+         de fábrica. */
+      '<span class="reloj"><button class="paso" data-menos="' + i + '" ' +
+      'aria-label="Menos tiempo">−</button><b>' + rotulo(it.min) + '</b>' +
+      '<button class="paso" data-mas="' + i + '" aria-label="Más tiempo">+</button></span>' +
       '<button class="dur" data-borrar="' + i + '" aria-label="Borrar">✕</button></div>';
     cont.appendChild(d);
   });
@@ -608,7 +627,7 @@ $("bloques").addEventListener("focusout", function(e){
   }
   if (!it.durFija) {
     it.min = duracion(nuevo);
-    caja.querySelector("[data-dur]").textContent = rotulo(it.min);
+    caja.querySelector(".reloj b").textContent = rotulo(it.min);
     pintarAvance();
   }
 });
@@ -622,9 +641,12 @@ $("bloques").addEventListener("click", function(e){
     it2.porque = "lo cambiaste tú";
     it2.fijo = true;
     pintarBloques();
-  } else if (b.dataset.dur) {
-    var it = items[b.dataset.dur];
-    it.min = DURS[(DURS.indexOf(it.min) + 1) % DURS.length];
+  } else if (b.dataset.mas || b.dataset.menos) {
+    /* No da la vuelta: con un «+» a la vista, saltar de 3 h a 10 min parece
+       que la página se rompió. Se queda en la punta. */
+    var i2 = b.dataset.mas || b.dataset.menos, it = items[i2];
+    var j = DURS.indexOf(it.min) + (b.dataset.mas ? 1 : -1);
+    it.min = DURS[Math.max(0, Math.min(DURS.length - 1, j))];
     it.durFija = true;
     pintarBloques(); pintarAvance();
   } else if (b.dataset.borrar) {
@@ -655,7 +677,7 @@ $("otra").addEventListener("click", function(){
 
 /* ----------------------------------------------------------- el resultado */
 var textoDiag = "", analisisIA = "", ultimo = null, yaSumo = false;
-$("ver").addEventListener("click", function(){
+function mostrarResultado(){
   var tot = { alta: 0, media: 0, baja: 0 }, suma = 0;
   items.forEach(function(it){ tot[it.tipo] += it.min; suma += it.min; });
   if (!suma) return;
@@ -785,8 +807,9 @@ $("ver").addEventListener("click", function(){
     "tarea. Esto no: aquí cada actividad lleva la probabilidad que le da el libro. " +
     "Sirven para mirarse, no para restarse.</p>" +
     '<p class="dato">El Director LIBRE, cap. 5 · PULS 2024, citado en el libro</p></div>' +
-    (analisisIA ? '<div class="tarjeta ia"><h3>Lo que ve la IA en tu día</h3><p>' +
-      esc(analisisIA) + "</p></div>" : "") +
+    '<div class="tarjeta ia" id="tarjeta-ia"' + (analisisIA ? "" : " hidden") +
+    '><h3>Lo que ve la IA en tu día</h3><p id="ia-txt">' + esc(analisisIA) +
+    "</p></div>" +
     '<div class="tarjeta"><h3>Tus tres mayores ladrones de tiempo</h3><ol class="ladrones">' +
     ladrones.map(function(it){
       return "<li>" + esc(it.texto.slice(0, 90)) + " <b>(" + rotulo(it.min) + ")</b></li>";
@@ -822,6 +845,35 @@ $("ver").addEventListener("click", function(){
     (analisisIA ? "\n\n" + analisisIA : "");
 
   $("p1").hidden = true; $("p3").hidden = false; window.scrollTo(0, 0);
+}
+
+/* Si llega el comentario de la IA con la radiografía ya en pantalla, se mete
+   en su tarjeta sin volver a dibujar nada: el director está leyendo. */
+function ponerAnalisis(){
+  if (!analisisIA || !$("ia-txt")) return;
+  $("ia-txt").textContent = analisisIA;
+  $("tarjeta-ia").hidden = false;
+  textoDiag += "\\n\\n" + analisisIA;
+}
+
+$("ver").addEventListener("click", function(){
+  if (!items.length) { $("rapidas").scrollIntoView({ block: "start" }); return; }
+  var escritas = items.filter(function(it){ return it.libre && !it.fijo; });
+  if (!escritas.length) {
+    /* Nada escrito a mano: el número ya está completo, no hay por qué esperar
+       al modelo para mostrarlo. */
+    mostrarResultado();
+    consultarIA().then(ponerAnalisis, function(){});
+    return;
+  }
+  revisarNombres(escritas, function(){
+    var b = $("ver");
+    b.disabled = true; b.textContent = "La IA está mirando tu día…";
+    consultarIA().then(function(){}, function(){}).then(function(){
+      b.disabled = false; b.textContent = "Ver mi radiografía";
+      mostrarResultado(); ponerAnalisis();
+    });
+  });
 });
 
 $("copiar").addEventListener("click", function(){
@@ -880,12 +932,10 @@ function nombresPropios(t){
    sin avisar. Lo que sí hace la IA es clasificar lo que el director escribió
    por su cuenta, que es lo único que no estaba en el catálogo, y mirar el
    conjunto. */
-function afinar(){
-  var b = $("afinar");
-  b.disabled = true;
-  $("estado-ia").textContent = "Pensando…";
+function consultarIA(){
+  $("estado-ia").textContent = "La IA está mirando tu día…";
   var dia = items.map(function(it){ return it.texto + ", " + rotulo(it.min); }).join(". ");
-  fetch(API + "clasificar", {
+  return fetch(API + "clasificar", {
     method: "POST", headers: { "content-type": "application/json" },
     body: JSON.stringify({ texto: dia })
   }).then(function(r){ return r.json().then(function(d){ return { ok: r.ok, d: d }; }); })
@@ -917,32 +967,32 @@ function afinar(){
         ? (tocadas === 1 ? "Clasificó la que escribiste." : "Clasificó las " +
             tocadas + " que escribiste.") + " El resto queda como lo trae el libro."
         : "Miró tu día. Lo vas a ver en la radiografía.";
-      b.textContent = "✨ Mirar de nuevo";
     }).catch(function(e){
-      $("estado-ia").textContent = "No se pudo afinar (" + e.message +
-        "). Te queda la clasificación del teléfono.";
-    }).then(function(){ b.disabled = false; });
+      $("estado-ia").textContent = "La IA no contestó (" + e.message +
+        "). Tu día se mide igual, con la clasificación del libro.";
+      throw e;
+    });
 }
-$("afinar").addEventListener("click", function(){
+/* LA COMPUERTA DE LOS NOMBRES. Solo pueden traer un nombre las filas que
+   escribió el director: las del catálogo las escribimos nosotros. Si hay uno,
+   no se manda nada hasta que él decida. */
+function revisarNombres(escritas, seguir){
   var caja = $("aviso-nombres");
-  if (!caja.hidden) { caja.hidden = true; afinar(); return; }
-  /* Solo pueden traer un nombre las filas que escribió el director: las del
-     catálogo las escribimos nosotros. */
-  var n = nombresPropios(items.filter(function(it){ return it.libre; })
-    .map(function(it){ return it.texto; }).join(". "));
-  if (!n.length) { afinar(); return; }
+  var n = nombresPropios(escritas.map(function(it){ return it.texto; }).join(". "));
+  if (!n.length) { caja.hidden = true; seguir(); return; }
   caja.hidden = false;
   caja.innerHTML = "<b>Un momento antes de mandarlo a la IA.</b> Esto parece el nombre de una " +
     "persona: <b>" + esc(n.join(", ")) + "</b>. Si es un docente o un estudiante, " +
     "cámbialo por algo como «una profesora de 5.º». Para el ejercicio da lo mismo." +
     '<div class="fila"><button id="igual">Enviar igual</button>' +
     '<button id="cambio" class="fuerte">Lo voy a cambiar</button></div>';
-  $("igual").addEventListener("click", function(){ caja.hidden = true; afinar(); });
+  $("igual").addEventListener("click", function(){ caja.hidden = true; seguir(); });
   $("cambio").addEventListener("click", function(){
     caja.hidden = true; $("otra-txt").focus();
     $("bloques").scrollIntoView({ block: "start" });
   });
-});
+  caja.scrollIntoView({ block: "center" });
+}
 
 </script>
 </body>
