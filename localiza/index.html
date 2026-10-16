@@ -853,7 +853,9 @@ function ponerAnalisis(){
   if (!analisisIA || !$("ia-txt")) return;
   $("ia-txt").textContent = analisisIA;
   $("tarjeta-ia").hidden = false;
-  textoDiag += "\\n\\n" + analisisIA;
+  /* Si la radiografía ya se dibujó con el análisis adentro, no se agrega dos
+     veces a lo que el director copia. */
+  if (textoDiag.indexOf(analisisIA) < 0) textoDiag += "\n\n" + analisisIA;
 }
 
 $("ver").addEventListener("click", function(){
@@ -911,7 +913,7 @@ $("sumar").addEventListener("click", function(){
   });
 });
 
-/* ------------------------------------------------ afinar con IA (opcional) */
+/* ------------------------------------------------------------ la IA mira */
 var COMUNES = ("Llegué Llegue Después Despues Entré Entre Toda Todo Antes Almuerzo Reunión " +
   "Reunion El La Los Las Un Una Me Mi Y A En De Por Para Se No Hoy Ayer Mañana Manana Tarde " +
   "Lunes Martes Miércoles Miercoles Jueves Viernes Sábado Sabado Domingo UTP CRA SEP PIE PME " +
