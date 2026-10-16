@@ -122,8 +122,24 @@ footer a{color:var(--naranja)}
 
 <main class="env">
 
-<section class="paso" id="p1">
-  <h2>1. Tu día de ayer</h2>
+<section class="paso" id="p0">
+  <h2>1. Qué día vas a contar</h2>
+  <p class="ay">Uno de verdad, no uno típico. Elige el último que tengas fresco.</p>
+  <div class="tags" id="dias">
+    <button class="tag dia" data-dia="viernes" data-h="8" aria-pressed="true">El viernes pasado</button>
+    <button class="tag dia" data-dia="manana" data-h="5" aria-pressed="false">Hoy en la mañana</button>
+    <button class="tag dia" data-dia="ayer" data-h="8" aria-pressed="false">Ayer</button>
+  </div>
+
+  <h2 style="margin-top:24px">2. Tus horas de contrato ese día</h2>
+  <p class="ay">Las que tienes asignadas, <b>aunque trabajes más</b>. Es el número contra
+  el que se mide todo lo demás.</p>
+  <div class="tags" id="horas"></div>
+  <div class="fila"><button class="fuerte" id="seguir">Seguir</button></div>
+</section>
+
+<section class="paso" id="p1" hidden>
+  <h2 id="t-relato">3. Cuenta ese día</h2>
   <p class="ay">Hora por hora, con el detalle que recuerdes. Puedes dictarlo: es más
   rápido que escribirlo.</p>
   <textarea id="texto" placeholder="Llegué 7:30 y estuve media hora en la puerta recibiendo. Después firmé papeles del sostenedor como una hora. A las 9 me interrumpió un apoderado sin cita, 20 minutos. Entré a una clase de 5.º básico, 40 minutos…"></textarea>
@@ -131,18 +147,25 @@ footer a{color:var(--naranja)}
     <button class="mic" id="mic" hidden>🎤 Dictar</button>
     <button class="fuerte" id="analizar">Clasificar mi día</button>
     <button id="ejemplo-btn">Ver un ejemplo</button>
+    <button id="atras0">Atrás</button>
   </div>
   <p class="nota" id="estado-mic"></p>
   <div class="ejemplo">
-    <b>Nada de esto sale de tu teléfono.</b> No hay cuenta, no hay servidor y no se guarda
-    nada: si cierras la página, se borra. El dictado lo hace tu propio navegador.
+    <b>Lo que escribes no sale de tu teléfono</b>, salvo que toques «Afinar con IA» en el
+    paso siguiente. Ahí el texto viaja para que lo clasifique mejor, y no se guarda en
+    ninguna parte. El dictado lo hace tu propio navegador.
   </div>
 </section>
 
 <section class="paso" id="p2" hidden>
-  <h2>2. Revisá la clasificación</h2>
-  <p class="ay">Esto lo clasificó una lista de palabras, no una IA: <b>se equivoca</b>.
-  Toca para corregir el tipo y la duración. Eso es parte del ejercicio.</p>
+  <h2>4. Revisa la clasificación</h2>
+  <p class="ay" id="quien-clasifico">Esto lo clasificó una lista de palabras que corre en
+  tu teléfono, no una IA: <b>se equivoca</b>. Toca para corregir el tipo y la duración.</p>
+  <div class="fila" style="margin-top:0;margin-bottom:14px">
+    <button class="fuerte" id="afinar">✨ Afinar con IA</button>
+    <span class="nota" id="estado-ia" style="margin:0"></span>
+  </div>
+  <div class="ejemplo" id="aviso-nombres" hidden></div>
   <div class="leyenda">Si un bloque no corresponde, bórralo con la ✕.</div>
   <div id="bloques"></div>
   <div class="fila">
@@ -211,6 +234,54 @@ var EJEMPLO = "Llegué 7:30 y estuve media hora en la puerta recibiendo a los es
   "A las 17 me llamaron del DEPROV por un reporte, media hora.";
 
 function $(id){ return document.getElementById(id); }
+
+/* ------------------------------------------------- el dia y la jornada
+   EL DENOMINADOR SE PREGUNTA, NO SE SUPONE. Si el porcentaje se calcula sobre
+   la suma de lo que el director recordo, el numero miente: el que recuerda
+   poco sale con un porcentaje alto. Se mide contra sus horas de contrato, que
+   es el numero que el conoce y el que su sostenedor usa.
+
+   Y EL DIA NO ES «AYER». El taller es un lunes a las dos de la tarde: ayer fue
+   domingo. Por eso el que viene elegido es el viernes pasado, y hay una
+   opcion para quien solo tiene jornada de manana. */
+var DIA = "viernes", HORAS = 8;
+var ETIQ = { viernes: "el viernes pasado", manana: "hoy en la mañana", ayer: "ayer" };
+
+function pintarHoras(){
+  var opts = DIA === "manana" ? [3, 4, 5, 6] : [4, 5, 6, 7, 8, 9, 10, 11];
+  if (opts.indexOf(HORAS) < 0) HORAS = DIA === "manana" ? 5 : 8;
+  $("horas").innerHTML = opts.map(function(h){
+    return '<button class="tag hora" data-h="' + h + '" aria-pressed="' +
+      (h === HORAS) + '">' + h + " h</button>";
+  }).join("");
+}
+$("dias").addEventListener("click", function(e){
+  var b = e.target.closest("[data-dia]");
+  if (!b) return;
+  DIA = b.dataset.dia;
+  HORAS = parseInt(b.dataset.h, 10);
+  [].forEach.call($("dias").children, function(o){
+    o.setAttribute("aria-pressed", o === b);
+  });
+  pintarHoras();
+});
+$("horas").addEventListener("click", function(e){
+  var b = e.target.closest("[data-h]");
+  if (!b) return;
+  HORAS = parseInt(b.dataset.h, 10);
+  [].forEach.call($("horas").children, function(o){
+    o.setAttribute("aria-pressed", o === b);
+  });
+});
+$("seguir").addEventListener("click", function(){
+  $("t-relato").textContent = "3. Cuenta " + ETIQ[DIA];
+  $("p0").hidden = true; $("p1").hidden = false;
+  window.scrollTo(0, 0);
+});
+$("atras0").addEventListener("click", function(){
+  $("p1").hidden = true; $("p0").hidden = false;
+});
+pintarHoras();
 
 /* --------------------------------------------------------- la duracion
    Se busca en el propio texto antes de suponer. «media hora», «20 minutos»,
@@ -310,14 +381,17 @@ $("analizar").addEventListener("click", function(){
   window.scrollTo(0, 0);
 });
 
-var textoDiag = "";
+var textoDiag = "", analisisIA = "";
 $("ver").addEventListener("click", function(){
   var tot = {}, suma = 0;
   Object.keys(NOMBRE).forEach(function(k){ tot[k] = 0; });
   items.forEach(function(it){ tot[it.tipo] += it.min; suma += it.min; });
   if (!suma) return;
+  /* El porcentaje va sobre la JORNADA DE CONTRATO, no sobre lo que recordó.
+     Con la suma de lo recordado, el que recuerda menos sale mejor. */
+  var jornada = HORAS * 60;
   var pct = {};
-  Object.keys(tot).forEach(function(k){ pct[k] = Math.round(tot[k] / suma * 100); });
+  Object.keys(tot).forEach(function(k){ pct[k] = Math.round(tot[k] / jornada * 100); });
 
   var barras = Object.keys(NOMBRE).filter(function(k){ return tot[k] > 0; }).map(function(k){
     return '<div style="width:' + (tot[k] / suma * 100) + '%;background:' + COLOR[k] + '">' +
@@ -328,11 +402,24 @@ $("ver").addEventListener("click", function(){
       rotulo(tot[k]) + "</span>";
   }).join("");
 
-  var horas = (suma / 60).toFixed(1).replace(".0", "");
   var comparacion = pct.ped >= 24
     ? "Estás <b>por encima</b> del promedio de casi 5.000 directores de la región, que dedican el 24% al liderazgo pedagógico."
     : "El promedio de casi 5.000 directores de la región es <b>24%</b>. Tú estás en " +
       (pct.ped === 0 ? "cero" : pct.ped + "%") + ".";
+
+  /* La diferencia entre lo registrado y la jornada dice algo por si sola. */
+  var dif = suma - jornada, jornadaTxt = "";
+  if (dif > 25) {
+    jornadaTxt = "Registraste <b>" + rotulo(suma) + "</b> sobre una jornada de " + HORAS +
+      " h: <b>" + rotulo(dif) + " por encima de tu contrato</b>. Ese excedente no es " +
+      "gratis, y rara vez aparece en una planilla.";
+  } else if (dif < -25) {
+    jornadaTxt = "Registraste <b>" + rotulo(suma) + "</b> de una jornada de " + HORAS +
+      " h: quedaron <b>" + rotulo(-dif) + " sin contar</b>. Suelen ser las " +
+      "interrupciones, que son justo las que no se recuerdan.";
+  } else {
+    jornadaTxt = "Lo que contaste cuadra con tu jornada de " + HORAS + " h.";
+  }
 
   var fuga = ["del", "int", "suyo"].map(function(k){ return { k: k, m: tot[k] }; })
     .sort(function(a, b){ return b.m - a.m; })[0];
@@ -346,27 +433,103 @@ $("ver").addEventListener("click", function(){
   };
 
   $("resultado").innerHTML =
-    '<h2 class="titular">De tus ' + horas + " horas, <span>" + pct.ped +
+    '<h2 class="titular">De tus ' + HORAS + " horas de contrato, <span>" + pct.ped +
     "%</span> fue liderazgo pedagógico</h2>" +
     '<div class="barra">' + barras + "</div>" +
     '<div class="clave">' + clave + "</div>" +
     '<div class="tarjeta comparar"><h3>Contra la referencia</h3><p>' + comparacion +
     '</p><p class="dato">PULS 2024 · El Director LIBRE, Banco Mundial</p></div>' +
+    (analisisIA
+      ? '<div class="tarjeta" style="border-left:3px solid var(--naranja)">' +
+        "<h3>Lo que ve la IA en tu día</h3><p>" + analisisIA + "</p></div>"
+      : "") +
     '<div class="tarjeta"><h3>Tu fuga más grande: ' + NOMBRE[fuga.k].toLowerCase() +
     ", " + rotulo(fuga.m) + "</h3><p>" + CONSEJO[fuga.k] + "</p></div>" +
+    '<div class="tarjeta"><h3>Tu jornada</h3><p>' + jornadaTxt + "</p></div>" +
     '<div class="tarjeta"><h3>Lo que te llevas al taller</h3><p>Un día no es un patrón. ' +
     "Haz el mismo ejercicio dos días más: si el número se repite, <b>ese es tu punto de " +
     "partida</b>, y es contra ese número que se mide si el método sirvió.</p></div>";
 
-  textoDiag = "Mi día: " + horas + " horas registradas.\n" +
+  textoDiag = "Mi " + ETIQ[DIA] + ", sobre una jornada de contrato de " + HORAS + " h.\n" +
     Object.keys(NOMBRE).map(function(k){
       return "- " + NOMBRE[k] + ": " + rotulo(tot[k]) + " (" + pct[k] + "%)";
     }).join("\n") +
-    "\nLiderazgo pedagógico: " + pct.ped + "% (referencia PULS 2024: 24%).\n" +
-    "Fuga más grande: " + NOMBRE[fuga.k] + ", " + rotulo(fuga.m) + ".";
+    "\nRegistrado en total: " + rotulo(suma) + ".\n" +
+    "Liderazgo pedagógico: " + pct.ped + "% (referencia PULS 2024: 24%).\n" +
+    "Fuga más grande: " + NOMBRE[fuga.k] + ", " + rotulo(fuga.m) + "." +
+    (analisisIA ? "\n\n" + analisisIA : "");
 
   $("p2").hidden = true; $("p3").hidden = false;
   window.scrollTo(0, 0);
+});
+
+/* ------------------------------------------------ afinar con IA (opcional)
+   La clave NO esta en esta pagina: vive en un proxy que solo contesta a este
+   origen. Y antes de mandar nada, el mismo freno que la plataforma: si hay algo
+   que parece el nombre de una persona, se avisa y decide el director. */
+var API = "https://localiza-api-eight.vercel.app/api/clasificar";
+var COMUNES = ("Llegué Llegue Después Despues Entré Entre Toda Todo Antes Almuerzo Reunión " +
+  "Reunion El La Los Las Un Una Me Mi Y A En De Por Para Se No Hoy Ayer Mañana Manana Tarde " +
+  "Lunes Martes Miércoles Miercoles Jueves Viernes Sábado Sabado Domingo Enero Marzo Abril " +
+  "Mayo Junio Julio Agosto Octubre Noviembre Diciembre UTP CRA SEP PIE PME DEPROV SLEP " +
+  "MINEDUC Superintendencia Agencia Región Region Metropolitana Consejo Chile Simce Firmé " +
+  "Firme Revisé Revise Cubrí Cubri Salí Sali Volví Volvi Tuve Estuve Fui Hice Hablé Hable " +
+  "Atendí Atendi Básico Basico Medio").split(" ");
+
+function nombresPropios(t){
+  var out = [];
+  (t.match(/[^.!?¡¿\n]\s([A-ZÁÉÍÓÚÑ][a-záéíóúñ]{2,})/g) || []).forEach(function(x){
+    var p = x.trim().replace(/^[^A-ZÁÉÍÓÚÑ]+/, "");
+    if (COMUNES.indexOf(p) < 0 && out.indexOf(p) < 0) out.push(p);
+  });
+  return out.slice(0, 6);
+}
+
+function afinar(){
+  var t = $("texto").value.trim();
+  var b = $("afinar");
+  b.disabled = true;
+  $("estado-ia").textContent = "Pensando…";
+  fetch(API, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ texto: t })
+  }).then(function(r){
+    return r.json().then(function(d){ return { ok: r.ok, d: d }; });
+  }).then(function(res){
+    if (!res.ok || !res.d.bloques) throw new Error(res.d.error || "sin respuesta");
+    items = res.d.bloques.map(function(x){
+      return { texto: x.texto, tipo: x.tipo, min: x.min };
+    });
+    analisisIA = res.d.analisis || "";
+    pintarBloques();
+    $("quien-clasifico").innerHTML = "Esto lo clasificó una IA, y <b>también se " +
+      "equivoca</b>. Toca para corregir el tipo y la duración antes de seguir.";
+    $("estado-ia").textContent = "Listo, revísalo igual.";
+    b.textContent = "✨ Afinar de nuevo";
+  }).catch(function(e){
+    $("estado-ia").textContent = "No se pudo afinar (" + e.message +
+      "). Te queda la clasificación del teléfono, que sirve igual.";
+  }).then(function(){ b.disabled = false; });
+}
+
+$("afinar").addEventListener("click", function(){
+  var caja = $("aviso-nombres");
+  if (!caja.hidden) { caja.hidden = true; afinar(); return; }
+  var n = nombresPropios($("texto").value);
+  if (!n.length) { afinar(); return; }
+  caja.hidden = false;
+  caja.innerHTML = "<b>Un momento antes de enviar.</b> Esto parece el nombre de una " +
+    "persona: <b>" + n.join(", ") + "</b>. Si es un docente o un estudiante, cámbialo por " +
+    "algo como «una profesora de 5.º» antes de afinar. Para el ejercicio da lo mismo, y " +
+    'así no sale de tu teléfono.<div class="fila"><button id="igual">Enviar igual</button>' +
+    '<button id="cambio" class="fuerte">Lo voy a cambiar</button></div>';
+  $("igual").addEventListener("click", function(){ caja.hidden = true; afinar(); });
+  $("cambio").addEventListener("click", function(){
+    caja.hidden = true;
+    $("p2").hidden = true; $("p1").hidden = false;
+    $("texto").focus();
+  });
 });
 
 $("copiar").addEventListener("click", function(){
