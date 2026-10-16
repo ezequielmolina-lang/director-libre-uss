@@ -709,24 +709,16 @@ function mostrarResultado(){
      alta a quien solo conto los cuarenta minutos que observo, o sea le daria
      mejor resultado por contar menos. Eso no se hace.
 
-     LA REGLA, Y SE MUESTRA: el hueco va al lado que no impacta directo,
-     repartido entre media y baja como vienen entre ellas (mitad y mitad si no
-     hay ninguna). Es un supuesto conservador, va rayado en la barra y la
-     pagina dice cuantas horas pesa. */
+     LA REGLA, Y SE MUESTRA: el hueco entero cuenta como probabilidad baja.
+     Se repartia entre media y baja, y eso hacia que tiempo del que no se sabe
+     NADA sumara a «alguna probabilidad de impactar el aprendizaje»: en una
+     prueba inflaba esa cifra de 16% a 40%. De un tiempo que no se conto no se
+     puede afirmar que haya impactado algo. Va rayado en la barra y la pagina
+     dice cuantas horas pesa. */
   var contrato = HORAS * 60;
   var hueco = Math.max(0, contrato - suma);
   var cobertura = Math.min(100, Math.round(suma / contrato * 100));
-  var imp = { alta: 0, media: 0, baja: 0 };
-  if (hueco > 0) {
-    var noAlta = tot.media + tot.baja;
-    if (noAlta > 0) {
-      imp.media = Math.round(hueco * tot.media / noAlta);
-      imp.baja = hueco - imp.media;
-    } else {
-      imp.media = Math.round(hueco / 2);
-      imp.baja = hueco - imp.media;
-    }
-  }
+  var imp = { alta: 0, media: 0, baja: hueco };
   var con = { alta: tot.alta + imp.alta, media: tot.media + imp.media,
               baja: tot.baja + imp.baja };
 
@@ -777,10 +769,9 @@ function mostrarResultado(){
     var grave = cobertura < 50;
     aviso = '<div class="hueco' + (grave ? " grave" : "") + '">' +
       "<b>Contaste " + rotulo(suma) + " de una jornada de " + HORAS + " h.</b> " +
-      "Las <b>" + rotulo(hueco) + "</b> que faltan las pusimos del lado que no " +
-      "impacta directo, repartidas entre media y baja. No las repartimos en " +
-      "proporción a propósito: el tiempo que uno no recuerda es el fragmentado, " +
-      "no la clase a la que entró, y repartirlo así le daría mejor resultado a quien " +
+      "Las <b>" + rotulo(hueco) + "</b> que faltan cuentan como <b>probabilidad " +
+      "baja</b>. De un tiempo que no contaste no se puede afirmar que haya " +
+      "impactado el aprendizaje, y suponer que sí le daría mejor resultado a quien " +
       "contó menos." +
       (grave ? " <b>Aquí eso pesa más que lo que contaste</b>, así que el número de " +
         "abajo es en buena parte un supuesto." : "") +
@@ -842,7 +833,7 @@ function mostrarResultado(){
 
   textoDiag = "Mi " + ETIQ[DIA] + ", jornada de contrato de " + HORAS + " h.\n" +
     (hueco > 0 ? "Conté " + rotulo(suma) + "; las " + rotulo(hueco) + " que faltan " +
-      "quedaron del lado que no impacta directo, por supuesto de la página.\n" : "") +
+      "cuentan como probabilidad baja.\n" : "") +
     "Sin impacto directo en aprendizajes: " + sinImpacto + "%.\n" +
     "- Probabilidad alta: " + rotulo(tot.alta) + " (" + pct.alta + "%)\n" +
     "- Probabilidad media: " + rotulo(tot.media) + " (" + pct.media + "%)\n" +
