@@ -85,6 +85,9 @@ button:focus-visible{outline:3px solid var(--ambar);outline-offset:2px}
 /* El aviso del dictado y el del tiempo sin contar. Los dos dicen algo que el
    director tiene que leer antes de creerle al numero, asi que van con borde
    ambar y no como nota al pie. */
+.bloque p[contenteditable]{outline:none;border-bottom:1px dashed var(--linea);
+  padding-bottom:3px;min-height:1.4em}
+.bloque p[contenteditable]:focus{border-bottom-color:var(--ambar);background:#FFF8E8}
 .revisa{background:#FFF8E8;border:1px solid var(--ambar);border-radius:12px;
   padding:13px 15px;margin-top:12px;font-size:14px;line-height:1.5}
 .revisa b{color:var(--texto)}
@@ -195,9 +198,15 @@ footer a{color:var(--naranja)}
     <span class="nota" id="estado-ia" style="margin:0"></span>
   </div>
   <div class="ejemplo" id="aviso-nombres" hidden></div>
-  <div class="leyenda">Cada fila dice por qué quedó ahí. Si no estás de acuerdo,
-  tócala. Bórrala con la ✕.</div>
+  <div class="leyenda"><b>Todo esto se corrige.</b> Toca el texto de una fila para
+  arreglar lo que se entendió mal, toca Alta, Media o Baja para cambiar la
+  clasificación, los minutos para cambiar la duración y la ✕ para borrarla. Si
+  corriges el texto se vuelve a clasificar sola, salvo que ya la hayas cambiado
+  tú.</div>
   <div id="bloques"></div>
+  <div class="fila">
+    <button id="agregar">+ Agregar una línea</button>
+  </div>
   <div class="fila">
     <button class="fuerte" id="ver">Ver mi radiografía</button>
     <button id="volver">Volver al texto</button>
@@ -402,7 +411,14 @@ function clasificar(t){
 }
 
 function partir(texto){
-  return texto.split(/\n+|(?<=[.;])\s+/)
+  /* DICTANDO NO HAY PUNTOS. El relato llega corrido: «en la mañana tuve una
+     reunión después estuve una hora con el sostenedor después entré a una
+     clase». Cortando solo por punto y coma, todo el día quedaba en UNA línea
+     de tres horas y no había nada que corregir. Así que también se corta
+     antes de las palabras con las que uno encadena el día al hablar. Si un
+     corte queda raro, la línea se edita o se borra, que es justo el punto. */
+  var cortes = /\s*,?\s*(?:y\s+)?(?=(?:después|despues|luego|más tarde|mas tarde|entonces|enseguida|acto seguido|al mediodía|al mediodia|en la mañana|en la manana|en la tarde)\b)/gi;
+  return texto.replace(cortes, "\\n").split(/\n+|(?<=[.;])\s+/)
     .map(function(x){ return x.trim(); })
     .filter(function(x){ return x.length > 8; })
     .slice(0, 40);
@@ -425,7 +441,12 @@ function pintarBloques(){
       return '<button class="tag ' + k + '" data-i="' + i + '" data-k="' + k + '" ' +
         'aria-pressed="' + (it.tipo === k) + '">' + NOMBRE[k] + "</button>";
     }).join("");
-    d.innerHTML = "<p>" + esc(it.texto) + "</p>" +
+    /* EL TEXTO SE EDITA. Lo que está escrito acá salió de un dictado y el
+       dictado se equivoca justo con lo que más pesa: «cuarenta» por «cuarenta
+       y cinco», el curso, la sigla. Si la línea no se puede tocar, el error
+       viaja hasta el porcentaje y no hay dónde arreglarlo. */
+    d.innerHTML = '<p contenteditable="true" data-t="' + i + '" ' +
+      'aria-label="Corregir esta línea">' + esc(it.texto) + "</p>" +
       '<p class="porque">' + esc(it.porque || "") + "</p>" +
       '<div class="tags">' + tags +
       '<button class="dur" data-dur="' + i + '">' + rotulo(it.min) + "</button>" +
@@ -436,16 +457,43 @@ function pintarBloques(){
 function esc(s){ return String(s).replace(/[&<>]/g, function(c){
   return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]; }); }
 
+/* Se actualiza al salir de la línea y SIN redibujar todo: si se redibuja, el
+   toque que viene después cae sobre un elemento que ya no existe y se pierde,
+   que en un teléfono se siente como que la página no responde. */
+$("bloques").addEventListener("focusout", function(e){
+  var campo = e.target.closest("p[contenteditable]");
+  if (!campo) return;
+  var i = +campo.dataset.t, it = items[i], nuevo = campo.textContent.trim();
+  if (!it || nuevo === it.texto) return;
+  if (!nuevo) { items.splice(i, 1); pintarBloques(); return; }
+  it.texto = nuevo;
+  var caja = campo.parentNode;
+  if (!it.fijo) {
+    var c = clasificar(nuevo);
+    it.tipo = c.tipo; it.porque = c.porque;
+    caja.querySelector(".porque").textContent = c.porque;
+    [].forEach.call(caja.querySelectorAll("[data-k]"), function(b){
+      b.setAttribute("aria-pressed", b.dataset.k === it.tipo);
+    });
+  }
+  if (!it.durFija) {
+    it.min = duracion(nuevo);
+    caja.querySelector("[data-dur]").textContent = rotulo(it.min);
+  }
+});
+
 $("bloques").addEventListener("click", function(e){
   var b = e.target.closest("button");
   if (!b) return;
   if (b.dataset.k) {
     items[b.dataset.i].tipo = b.dataset.k;
     items[b.dataset.i].porque = "lo cambiaste tú";
+    items[b.dataset.i].fijo = true;
     pintarBloques();
   } else if (b.dataset.dur) {
     var it = items[b.dataset.dur];
     it.min = DURS[(DURS.indexOf(it.min) + 1) % DURS.length];
+    it.durFija = true;
     pintarBloques();
   } else if (b.dataset.borrar) { items.splice(b.dataset.borrar, 1); pintarBloques(); }
 });
@@ -456,6 +504,18 @@ $("texto").addEventListener("input", function(){
   $("revisa").className = "revisa listo";
   $("revisa").innerHTML = "<b>Lo corregiste.</b> Cuando esté como fue tu día, " +
     "toca clasificar.";
+});
+/* Se agrega acá y no volviendo al texto: volver al texto y clasificar de
+   nuevo rehace todo desde cero y se pierden las correcciones, que a esta
+   altura son lo más valioso que hay en la pantalla. */
+$("agregar").addEventListener("click", function(){
+  items.push({ texto: "", tipo: "media", porque: "escribila y la clasifico", min: 30 });
+  pintarBloques();
+  var ps = $("bloques").querySelectorAll("p[contenteditable]");
+  if (ps.length) {
+    ps[ps.length - 1].focus();
+    ps[ps.length - 1].scrollIntoView({ block: "center" });
+  }
 });
 $("ejemplo-btn").addEventListener("click", function(){ $("texto").value = EJEMPLO; });
 $("volver").addEventListener("click", function(){ $("p2").hidden = true; $("p1").hidden = false; });
@@ -632,10 +692,8 @@ $("ver").addEventListener("click", function(){
     var b = e.target.closest(".barrera");
     if (b) b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true");
     if (e.target.id === "completar") {
-      $("p3").hidden = true; $("p2").hidden = true; $("p1").hidden = false;
-      $("texto").focus();
-      $("estado-mic").textContent = "Agregá lo que falta al final, escribiendo o dictando.";
-      window.scrollTo(0, 0);
+      $("p3").hidden = true; $("p2").hidden = false;
+      $("agregar").click();
     }
   });
 
