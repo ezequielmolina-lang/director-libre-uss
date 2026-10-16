@@ -665,7 +665,6 @@ $("otra").addEventListener("click", function(){
   items = []; analisisIA = "";
   pintarBloques(); pintarAvance();
   $("estado-ia").textContent = ""; $("aviso-nombres").hidden = true;
-  delete $("ver").dataset.avisado;
   [].forEach.call($("rapidas").querySelectorAll(".puesta"), function(b){
     b.classList.remove("puesta");
   });
@@ -868,27 +867,6 @@ function ponerAnalisis(){
 
 $("ver").addEventListener("click", function(){
   if (!items.length) { $("rapidas").scrollIntoView({ block: "start" }); return; }
-  /* NADIE SE ENTERA DESPUES. Si falta mas de una hora de la jornada, se dice
-     que va a pasar con ese tiempo y se le da la chance de completarlo. La
-     regla no cambia; cambia que la conoce antes de ver el numero. */
-  var falta = HORAS * 60 - items.reduce(function(a, it){ return a + it.min; }, 0);
-  if (falta > 60 && !$("ver").dataset.avisado) {
-    $("ver").dataset.avisado = "1";
-    var c = $("aviso-nombres");
-    c.hidden = false;
-    c.innerHTML = "<b>Te faltan " + rotulo(falta) + " por contar</b> de tu jornada de " +
-      HORAS + " h. Ese tiempo va a contar como <b>sin impacto directo</b>, porque lo " +
-      "que uno no recuerda suele ser lo fragmentado, y repartirlo de otra forma le " +
-      "daría mejor resultado a quien contó menos." +
-      '<div class="fila"><button class="fuerte" id="completar2">Agregar lo que falta</button>' +
-      '<button id="asi">Seguir así</button></div>';
-    $("completar2").addEventListener("click", function(){
-      c.hidden = true; $("rapidas").scrollIntoView({ block: "start" });
-    });
-    $("asi").addEventListener("click", function(){ c.hidden = true; $("ver").click(); });
-    c.scrollIntoView({ block: "center" });
-    return;
-  }
   var escritas = items.filter(function(it){ return it.libre && !it.fijo; });
   if (!escritas.length) {
     /* Nada escrito a mano: el número ya está completo, no hay por qué esperar
