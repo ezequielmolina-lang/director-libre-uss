@@ -240,9 +240,13 @@ var LEX = {
     ["deprov", "es coordinación con el nivel intermedio"],
     ["slep", "es coordinación con el nivel intermedio"],
     ["pme", "es el PME"],
-    ["estudiante", "es trabajo con un estudiante"],
-    ["capacitaci", "es formación"],
+    ["cubrir un curso", "cubriste un curso que quedó sin docente"],
+    ["cubriendo", "cubriste un curso que quedó sin docente"],
+    ["licencia", "cubriste a un docente ausente"],
+    ["reemplaz", "hiciste un reemplazo"],
     ["recibiendo", "es recibir a los estudiantes"],
+    ["capacitaci", "es formación"],
+    ["estudiante", "es trabajo con un estudiante"],
     ["puerta", "es presencia en la entrada"],
     ["recreo", "es presencia en el patio"]
   ],
@@ -362,7 +366,7 @@ function clasificar(t){
     var n = 0, cual = null;
     presentes.forEach(function(p){
       var tapado = presentes.some(function(o){ return o[0] !== p[0] && o[0].indexOf(p[0]) >= 0; });
-      if (!tapado) { n++; if (!cual) cual = p; }
+      if (!tapado) { n++; if (!cual || p[0].length > cual[0].length) cual = p; }
     });
     if (n > max) { max = n; mejor = k; razon = cual[1]; }
   }
