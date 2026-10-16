@@ -26,7 +26,7 @@
 :root{
   --tinta:#022C3A; --ambar:#FBAE00; --naranja:#E8590C;
   --fondo:#FFFFFF; --suave:#F3F7F8; --linea:#D2DDE1; --texto:#022C3A;
-  --texto2:#48606B; --alta:#2F7A52; --media:#1D5C8F; --baja:#B8430A;
+  --texto2:#48606B; --alta:#0E6E5B; --media:#F0A500; --baja:#6E8794;
   --sombra:0 1px 2px rgba(2,44,58,.06), 0 10px 30px -18px rgba(2,44,58,.35);
   --titulo:'Bebas Neue','Arial Narrow',Impact,sans-serif;
   --fuente:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
@@ -70,7 +70,7 @@ button:focus-visible{outline:3px solid var(--ambar);outline-offset:2px}
   background:#fff;color:var(--texto2);cursor:pointer}
 .tag[aria-pressed="true"]{color:#fff}
 .tag.alta[aria-pressed="true"]{background:var(--alta);border-color:var(--alta)}
-.tag.media[aria-pressed="true"]{background:var(--media);border-color:var(--media)}
+.tag.media[aria-pressed="true"]{background:var(--media);border-color:var(--media);color:var(--tinta)}
 .tag.baja[aria-pressed="true"]{background:var(--baja);border-color:var(--baja)}
 .tag.dia[aria-pressed="true"],.tag.hora[aria-pressed="true"]{background:var(--tinta);
   border-color:var(--tinta)}
@@ -85,6 +85,18 @@ button:focus-visible{outline:3px solid var(--ambar);outline-offset:2px}
 .titular{font-family:var(--titulo);font-size:clamp(30px,8vw,48px);line-height:1;
   text-transform:uppercase;margin:0 0 10px}
 .titular span{color:var(--naranja)}
+.cifras{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0 6px}
+@media (max-width:560px){ .cifras{grid-template-columns:1fr} }
+.cifra{border:1px solid var(--linea);border-radius:16px;padding:16px 17px;
+  border-top:4px solid var(--linea);background:var(--suave)}
+.cifra.alta{border-top-color:var(--alta)}
+.cifra.media{border-top-color:var(--media)}
+.cifra .num{font-family:var(--titulo);font-size:clamp(40px,11vw,60px);line-height:.9;
+  font-variant-numeric:tabular-nums}
+.cifra.alta .num{color:var(--alta)}
+.cifra.media .num{color:#B07A00}
+.cifra .et{font-weight:800;font-size:14.5px;margin-top:8px;line-height:1.25}
+.cifra .pie{font-size:12.6px;color:var(--texto2);margin-top:5px;line-height:1.4}
 .barra{display:flex;height:36px;border-radius:10px;overflow:hidden;margin:16px 0 10px;
   border:1px solid var(--linea)}
 .barra div{display:flex;align-items:center;justify-content:center;font-size:12.5px;
@@ -284,7 +296,7 @@ var LEX = {
   ]
 };
 var NOMBRE = { alta: "Alta", media: "Media", baja: "Baja" };
-var COLOR = { alta: "#2F7A52", media: "#1D5C8F", baja: "#B8430A" };
+var COLOR = { alta: "#0E6E5B", media: "#F0A500", baja: "#6E8794" };
 var DURS = [10, 15, 20, 30, 45, 60, 90, 120, 180];
 
 /* Las seis barreras del libro, tal cual. */
@@ -461,6 +473,7 @@ $("ver").addEventListener("click", function(){
     pct[k] = Math.round(tot[k] / jornada * 100);
   });
   var sinImpacto = Math.round((tot.media + tot.baja) / jornada * 100);
+  var conImpacto = Math.round((tot.alta + tot.media) / jornada * 100);
   ultimo = { alta: tot.alta, media: tot.media, baja: tot.baja, horas: HORAS };
 
   var barras = ["alta", "media", "baja"].filter(function(k){ return tot[k] > 0; })
@@ -481,6 +494,16 @@ $("ver").addEventListener("click", function(){
   $("resultado").innerHTML =
     '<h2 class="titular">El <span>' + sinImpacto + "%</span> de tu día no tuvo impacto " +
     "directo en los aprendizajes</h2>" +
+    '<div class="cifras">' +
+      '<div class="cifra alta"><div class="num">' + pct.alta + '%</div>' +
+      '<div class="et">Liderazgo pedagógico</div>' +
+      '<div class="pie">Lo que toca directamente la enseñanza. PULS: 24%. ' +
+      'Meta del libro: 50%.</div></div>' +
+      '<div class="cifra media"><div class="num">' + conImpacto + '%</div>' +
+      '<div class="et">Con algún impacto en el aprendizaje</div>' +
+      '<div class="pie">Directo o indirecto: suma lo pedagógico y lo que llega al ' +
+      'aprendizaje por otro camino.</div></div>' +
+    '</div>' +
     '<div class="barra">' + barras + "</div>" +
     '<div class="clave">' + clave + "</div>" +
     '<div class="tarjeta comparar"><h3>Contra las referencias</h3>' +

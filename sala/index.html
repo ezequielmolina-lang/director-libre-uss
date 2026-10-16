@@ -19,7 +19,7 @@
 <style>
 :root{
   --tinta:#022C3A; --ambar:#FBAE00; --naranja:#E8590C;
-  --alta:#2F7A52; --media:#1D5C8F; --baja:#B8430A;
+  --alta:#1C9B82; --media:#FBAE00; --baja:#7F97A3;
   --titulo:'Bebas Neue','Arial Narrow',Impact,sans-serif;
   --fuente:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
@@ -35,6 +35,11 @@ h1{font-family:var(--titulo);font-size:clamp(44px,9vw,120px);line-height:.92;mar
   text-transform:uppercase}
 h1 span{color:var(--ambar)}
 .sub{font-size:clamp(15px,2vw,26px);color:#9fb4bf;margin-top:10px;max-width:40ch}
+.cifras{display:flex;gap:clamp(18px,4vw,60px);flex-wrap:wrap;margin-top:3vh}
+.cifra b{font-family:var(--titulo);font-size:clamp(40px,7vw,86px);line-height:.9;
+  display:block;font-variant-numeric:tabular-nums}
+.cifra span{display:block;font-size:clamp(12px,1.4vw,18px);color:#9fb4bf;
+  font-weight:700;margin-top:2px}
 .barra{display:flex;height:clamp(40px,7vh,72px);border-radius:14px;overflow:hidden;
   margin:4vh 0 2vh;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06)}
 .barra div{display:flex;align-items:center;justify-content:center;
@@ -67,8 +72,10 @@ h1 span{color:var(--ambar)}
 
 <script>
 var API = "https://localiza-api-eight.vercel.app/api/sala";
-var COLOR = { ped: "#2F7A52", suyo: "#1D5C8F", del: "#B8430A" };
-var NOMBRE = { ped: "Probabilidad alta", suyo: "Media", del: "Baja" };
+/* La misma rampa que la pagina de cada director, un punto mas clara
+   porque aca va sobre fondo oscuro y proyectada. */
+var COLOR = { ped: "#1C9B82", suyo: "#FBAE00", del: "#7F97A3" };
+var NOMBRE = { ped: "Liderazgo pedagógico", suyo: "Impacto indirecto", del: "Sin impacto" };
 
 function rotulo(m){
   if (m < 60) return m + " min";
@@ -91,9 +98,14 @@ function pintar(d){
       rotulo(m[k]) + "</span>";
   }).join("");
 
+  var con = Math.round((m.ped + m.suyo) / jor * 100);
   document.getElementById("todo").innerHTML =
     '<h1>El <span>' + sin + "%</span> de nuestro día no tuvo impacto directo en los " +
     "aprendizajes</h1>" +
+    '<div class="cifras"><div class="cifra"><b style="color:' + COLOR.ped + '">' +
+    d.pct.ped + '%</b><span>en liderazgo pedagógico</span></div>' +
+    '<div class="cifra"><b style="color:' + COLOR.suyo + '">' + con +
+    '%</b><span>con algún impacto en el aprendizaje</span></div></div>' +
     '<div class="barra">' + barras + "</div>" +
     '<div class="clave">' + clave + "</div>" +
     '<div class="pie"><div class="n">' + d.n + "<small>" +
