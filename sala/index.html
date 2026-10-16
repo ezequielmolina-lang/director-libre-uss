@@ -75,7 +75,7 @@ var API = "https://localiza-api-eight.vercel.app/api/sala";
 /* La misma rampa que la pagina de cada director, un punto mas clara
    porque aca va sobre fondo oscuro y proyectada. */
 var COLOR = { ped: "#1C9B82", suyo: "#FBAE00", del: "#7F97A3" };
-var NOMBRE = { ped: "Liderazgo pedagógico", suyo: "Impacto indirecto", del: "Sin impacto" };
+var NOMBRE = { ped: "Probabilidad alta", suyo: "Probabilidad media", del: "Probabilidad baja" };
 
 function rotulo(m){
   if (m < 60) return m + " min";
@@ -103,16 +103,22 @@ function pintar(d){
     '<h1>El <span>' + sin + "%</span> de nuestro día no tuvo impacto directo en los " +
     "aprendizajes</h1>" +
     '<div class="cifras"><div class="cifra"><b style="color:' + COLOR.ped + '">' +
-    d.pct.ped + '%</b><span>en liderazgo pedagógico</span></div>' +
+    d.pct.ped + '%</b><span>con alta probabilidad de impactar el aprendizaje</span></div>' +
     '<div class="cifra"><b style="color:' + COLOR.suyo + '">' + con +
-    '%</b><span>con algún impacto en el aprendizaje</span></div></div>' +
+    '%</b><span>con alguna probabilidad: alta más media</span></div></div>' +
     '<div class="barra">' + barras + "</div>" +
     '<div class="clave">' + clave + "</div>" +
     '<div class="pie"><div class="n">' + d.n + "<small>" +
-    (d.n === 1 ? "director" : "directores") + " en la sala</small></div>" +
+    (d.n === 1 ? "director" : "directores") + " en la sala" +
+    /* SE DICE CUANTOS CONTARON A MEDIAS. Dictando, casi nadie cubre la jornada
+       entera, y el resto lo imputa la pagina. Proyectar el porcentaje sin esta
+       linea lo hace parecer medido cuando en parte es supuesto. */
+    (d.parciales ? " · " + d.parciales + " contaron menos del 80% de su jornada" +
+      ", el resto lo imputó la página" : "") + "</small></div>" +
     '<div class="ref">El libro dice que a la mayoría le da <b>más del 70%</b>. ' +
-    "En liderazgo pedagógico estamos en <b>" + d.pct.ped + "%</b>: la referencia " +
-    "regional es 24% y la meta del libro, 50%.</div></div>";
+    "Cada actividad quedó donde <b>cada uno</b> juzgó que quedaba. PULS 2024 mide " +
+    "otra cosa, el tipo de tarea: 24% liderazgo pedagógico, 76% administración." +
+    "</div></div>";
 }
 
 function traer(){

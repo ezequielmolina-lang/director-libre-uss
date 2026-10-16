@@ -82,6 +82,19 @@ button:focus-visible{outline:3px solid var(--ambar);outline-offset:2px}
   border:2px solid var(--linea);border-radius:99px;padding:6px 12px;background:#fff;
   color:var(--texto2);cursor:pointer}
 .leyenda{font-size:13px;color:var(--texto2);margin-bottom:14px}
+/* El aviso del dictado y el del tiempo sin contar. Los dos dicen algo que el
+   director tiene que leer antes de creerle al numero, asi que van con borde
+   ambar y no como nota al pie. */
+.revisa{background:#FFF8E8;border:1px solid var(--ambar);border-radius:12px;
+  padding:13px 15px;margin-top:12px;font-size:14px;line-height:1.5}
+.revisa b{color:var(--texto)}
+.revisa.listo{background:var(--suave);border-color:var(--linea)}
+.hueco{background:var(--suave);border:1px solid var(--linea);border-left:3px solid var(--baja);
+  border-radius:12px;padding:14px 16px;margin-bottom:18px;font-size:14px;line-height:1.55;
+  color:var(--texto2)}
+.hueco b{color:var(--texto)}
+.hueco.grave{background:#FFF8E8;border-color:var(--ambar);border-left-color:var(--naranja)}
+.hueco .fila{margin-top:10px}
 .titular{font-family:var(--titulo);font-size:clamp(30px,8vw,48px);line-height:1;
   text-transform:uppercase;margin:0 0 10px}
 .titular span{color:var(--naranja)}
@@ -159,6 +172,7 @@ footer a{color:var(--naranja)}
   <p class="ay">Hora por hora, con el detalle que recuerdes. <b>No te juzgues, solo
   observa.</b> Puedes dictarlo: es más rápido que escribirlo.</p>
   <textarea id="texto" placeholder="Llegué 7:30 y estuve media hora recibiendo en la puerta. Después firmé papeles del sostenedor como una hora. A las 9 me interrumpió un apoderado sin cita, 20 minutos. Entré a una clase de 5.º básico, 40 minutos…"></textarea>
+  <div class="revisa" id="revisa" hidden></div>
   <div class="fila">
     <button class="mic" id="mic" hidden>🎤 Dictar</button>
     <button class="fuerte" id="analizar">Clasificar mi día</button>
@@ -434,10 +448,19 @@ $("bloques").addEventListener("click", function(e){
   } else if (b.dataset.borrar) { items.splice(b.dataset.borrar, 1); pintarBloques(); }
 });
 
+var vinoDeAudio = false;
+$("texto").addEventListener("input", function(){
+  if (!vinoDeAudio || $("revisa").hidden) return;
+  $("revisa").className = "revisa listo";
+  $("revisa").innerHTML = "<b>Lo corregiste.</b> Cuando esté como fue tu día, " +
+    "toca clasificar.";
+});
 $("ejemplo-btn").addEventListener("click", function(){ $("texto").value = EJEMPLO; });
 $("volver").addEventListener("click", function(){ $("p2").hidden = true; $("p1").hidden = false; });
 $("otra").addEventListener("click", function(){
   $("texto").value = ""; items = []; analisisIA = "";
+  vinoDeAudio = false; $("revisa").hidden = true;
+  $("analizar").textContent = "Clasificar mi día";
   $("p3").hidden = true; $("p2").hidden = true; $("p1").hidden = true; $("p0").hidden = false;
   window.scrollTo(0, 0);
 });
@@ -468,51 +491,125 @@ $("ver").addEventListener("click", function(){
      maximo de los dos conserva las dos cosas: nunca pasa de 100 y no premia
      al que olvida. */
   var jornada = Math.max(HORAS * 60, suma);
+
+  /* ---------------------------------------------- EL TIEMPO NO CONTADO
+     Casi nadie cuenta la jornada entera, y menos dictando: salen cinco frases
+     que cubren dos horas de ocho. Ese hueco antes se descontaba en silencio,
+     asi que los tres porcentajes bajaban juntos y el dia parecia haber sido
+     mayormente nada.
+
+     POR QUE NO SE REPARTE EN PROPORCION. Seria lo neutro si lo que se olvida
+     fuera igual a lo que se recuerda, y no lo es: lo que no se recuerda es el
+     tiempo fragmentado, el papeleo, el telefono, el pasillo. Nadie se olvida
+     de la clase a la que entro. Repartir en proporcion le daria el 100% en
+     alta a quien solo conto los cuarenta minutos que observo, o sea le daria
+     mejor resultado por contar menos. Eso no se hace.
+
+     LA REGLA, Y SE MUESTRA: el hueco va al lado que no impacta directo,
+     repartido entre media y baja como vienen entre ellas (mitad y mitad si no
+     hay ninguna). Es un supuesto conservador, va rayado en la barra y la
+     pagina dice cuantas horas pesa. */
+  var contrato = HORAS * 60;
+  var hueco = Math.max(0, contrato - suma);
+  var cobertura = Math.min(100, Math.round(suma / contrato * 100));
+  var imp = { alta: 0, media: 0, baja: 0 };
+  if (hueco > 0) {
+    var noAlta = tot.media + tot.baja;
+    if (noAlta > 0) {
+      imp.media = Math.round(hueco * tot.media / noAlta);
+      imp.baja = hueco - imp.media;
+    } else {
+      imp.media = Math.round(hueco / 2);
+      imp.baja = hueco - imp.media;
+    }
+  }
+  var con = { alta: tot.alta + imp.alta, media: tot.media + imp.media,
+              baja: tot.baja + imp.baja };
+
   var pct = {};
   ["alta", "media", "baja"].forEach(function(k){
-    pct[k] = Math.round(tot[k] / jornada * 100);
+    pct[k] = Math.round(con[k] / jornada * 100);
   });
-  var sinImpacto = Math.round((tot.media + tot.baja) / jornada * 100);
-  var conImpacto = Math.round((tot.alta + tot.media) / jornada * 100);
-  ultimo = { alta: tot.alta, media: tot.media, baja: tot.baja, horas: HORAS };
+  var sinImpacto = Math.round((con.media + con.baja) / jornada * 100);
+  var conImpacto = Math.round((con.alta + con.media) / jornada * 100);
+  /* Al grupo van los minutos con el hueco ya imputado, para que la suma de la
+     sala cierre contra las jornadas, y la cobertura, para que la pantalla
+     pueda decir cuantos contaron el dia a medias en vez de aparentar un
+     promedio mas limpio de lo que es. */
+  ultimo = { alta: con.alta, media: con.media, baja: con.baja, horas: HORAS,
+             cob: cobertura };
 
-  var barras = ["alta", "media", "baja"].filter(function(k){ return tot[k] > 0; })
-    .map(function(k){
-      return '<div style="width:' + (tot[k] / jornada * 100) + '%;background:' + COLOR[k] +
-        '">' + (pct[k] >= 9 ? pct[k] + "%" : "") + "</div>";
-    }).join("");
+  /* Lo contado va lleno y lo imputado rayado: en la barra se ve de una cual
+     parte del dia conto el director y cual parte pusimos nosotros. */
+  var barras = "";
+  ["alta", "media", "baja"].forEach(function(k){
+    var pc = Math.round(tot[k] / jornada * 100);
+    if (tot[k] > 0) {
+      barras += '<div style="width:' + (tot[k] / jornada * 100) + '%;background:' +
+        COLOR[k] + '">' + (pc >= 9 ? pc + "%" : "") + "</div>";
+    }
+    if (imp[k] > 0) {
+      barras += '<div title="tiempo que no contaste" style="width:' +
+        (imp[k] / jornada * 100) + '%;background:repeating-linear-gradient(135deg,' +
+        COLOR[k] + ',' + COLOR[k] + ' 6px,rgba(255,255,255,.5) 6px,' +
+        'rgba(255,255,255,.5) 12px)"></div>';
+    }
+  });
   var clave = ["alta", "media", "baja"].map(function(k){
     return '<span><i style="background:' + COLOR[k] + '"></i>' + NOMBRE[k] + " · " +
-      rotulo(tot[k]) + "</span>";
-  }).join("");
+      rotulo(con[k]) + (imp[k] > 0 ? " (" + rotulo(imp[k]) + " sin contar)" : "") +
+      "</span>";
+  }).join("") + (hueco > 0
+    ? '<span><i style="background:repeating-linear-gradient(135deg,#6E8794,#6E8794 4px,'
+      + '#fff 4px,#fff 8px)"></i>rayado: no lo contaste</span>' : "");
 
   /* Las tres actividades que mas tiempo consumieron sin impactar: el paso
      siguiente del libro, textual. */
   var ladrones = items.filter(function(it){ return it.tipo !== "alta"; })
     .sort(function(a, b){ return b.min - a.min; }).slice(0, 3);
 
-  $("resultado").innerHTML =
+  var aviso = "";
+  if (hueco > 0) {
+    var grave = cobertura < 50;
+    aviso = '<div class="hueco' + (grave ? " grave" : "") + '">' +
+      "<b>Contaste " + rotulo(suma) + " de una jornada de " + HORAS + " h.</b> " +
+      "Las <b>" + rotulo(hueco) + "</b> que faltan las pusimos del lado que no " +
+      "impacta directo, repartidas entre media y baja. No las repartimos en " +
+      "proporción a propósito: el tiempo que uno no recuerda es el fragmentado, " +
+      "no la clase a la que entró, y repartirlo así le daría mejor resultado a quien " +
+      "contó menos." +
+      (grave ? " <b>Acá eso pesa más que lo que contaste</b>, así que el número de " +
+        "abajo es en buena parte un supuesto." : "") +
+      '<div class="fila"><button id="completar">Agregar lo que falta</button></div></div>';
+  }
+
+  $("resultado").innerHTML = aviso +
     '<h2 class="titular">El <span>' + sinImpacto + "%</span> de tu día no tuvo impacto " +
     "directo en los aprendizajes</h2>" +
     '<div class="cifras">' +
       '<div class="cifra alta"><div class="num">' + pct.alta + '%</div>' +
-      '<div class="et">Liderazgo pedagógico</div>' +
-      '<div class="pie">Lo que toca directamente la enseñanza. PULS: 24%. ' +
-      'Meta del libro: 50%.</div></div>' +
+      '<div class="et">Alta probabilidad de impactar el aprendizaje</div>' +
+      '<div class="pie">Lo que marcaste como alta, actividad por actividad. Es tu ' +
+      'juicio, no una categoría de tarea.' + (hueco > 0 ? ' No le sumamos nada del ' +
+      'tiempo que no contaste.' : '') + '</div></div>' +
       '<div class="cifra media"><div class="num">' + conImpacto + '%</div>' +
-      '<div class="et">Con algún impacto en el aprendizaje</div>' +
-      '<div class="pie">Directo o indirecto: suma lo pedagógico y lo que llega al ' +
-      'aprendizaje por otro camino.</div></div>' +
+      '<div class="et">Alguna probabilidad: alta más media</div>' +
+      '<div class="pie">Todo lo que, según tú, llega al aprendizaje por algún ' +
+      'camino.' + (hueco > 0 ? ' Incluye ' + rotulo(imp.media) + ' del tiempo que no ' +
+      'contaste.' : '') + '</div></div>' +
     '</div>' +
     '<div class="barra">' + barras + "</div>" +
     '<div class="clave">' + clave + "</div>" +
     '<div class="tarjeta comparar"><h3>Contra las referencias</h3>' +
     "<p>El libro dice que a la mayoría de los directores que hacen este ejercicio le da " +
-    "<b>más del 70%</b>. Tú estás en " + sinImpacto + "%.</p>" +
-    "<p>Y en liderazgo pedagógico, lo de probabilidad alta, estás en <b>" + pct.alta +
-    "%</b>. El promedio de casi 5.000 directores de la región es 24%, y el propio libro " +
-    "propone como meta un mínimo de 50%.</p>" +
-    '<p class="dato">El Director LIBRE, cap. 5 · PULS 2024</p></div>' +
+    "<b>más del 70%</b> sin impacto directo. Tú estás en " + sinImpacto + "%.</p>" +
+    "<p><b>Y una medida parecida, que no es la misma.</b> PULS 2024 le preguntó a casi " +
+    "5.000 directores de la región cuánto de su tiempo se va en tareas administrativas y " +
+    "cuánto en liderazgo pedagógico: dio <b>76% y 24%</b>. Eso clasifica el tipo de " +
+    "tarea. Esto de acá no: acá cada actividad quedó donde <b>tú</b> juzgaste que " +
+    "quedaba, por su probabilidad de llegar al aprendizaje. Sirven para mirarse, no " +
+    "para restarse.</p>" +
+    '<p class="dato">El Director LIBRE, cap. 5 · PULS 2024, citado en el libro</p></div>' +
     (analisisIA ? '<div class="tarjeta ia"><h3>Lo que ve la IA en tu día</h3><p>' +
       esc(analisisIA) + "</p></div>" : "") +
     '<div class="tarjeta"><h3>Tus tres mayores ladrones de tiempo</h3><ol class="ladrones">' +
@@ -532,9 +629,17 @@ $("ver").addEventListener("click", function(){
   $("resultado").addEventListener("click", function(e){
     var b = e.target.closest(".barrera");
     if (b) b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true");
+    if (e.target.id === "completar") {
+      $("p3").hidden = true; $("p2").hidden = true; $("p1").hidden = false;
+      $("texto").focus();
+      $("estado-mic").textContent = "Agregá lo que falta al final, escribiendo o dictando.";
+      window.scrollTo(0, 0);
+    }
   });
 
   textoDiag = "Mi " + ETIQ[DIA] + ", jornada de contrato de " + HORAS + " h.\n" +
+    (hueco > 0 ? "Conté " + rotulo(suma) + "; las " + rotulo(hueco) + " que faltan " +
+      "quedaron del lado que no impacta directo, por supuesto de la página.\n" : "") +
     "Sin impacto directo en aprendizajes: " + sinImpacto + "%.\n" +
     "- Probabilidad alta: " + rotulo(tot.alta) + " (" + pct.alta + "%)\n" +
     "- Probabilidad media: " + rotulo(tot.media) + " (" + pct.media + "%)\n" +
@@ -567,7 +672,7 @@ $("sumar").addEventListener("click", function(){
   fetch(API + "sala", {
     method: "POST", headers: { "content-type": "application/json" },
     body: JSON.stringify({ ped: ultimo.alta, suyo: ultimo.media, del: ultimo.baja,
-      int: 0, horas: ultimo.horas })
+      int: 0, horas: ultimo.horas, cob: ultimo.cob })
   }).then(function(r){ return r.json(); }).then(function(d){
     if (d.ok) {
       $("estado-sala").textContent = "Listo. Tu resultado está en el total del grupo, " +
@@ -657,7 +762,25 @@ $("afinar").addEventListener("click", function(){
         ? "No diste permiso al micrófono. Puedes escribirlo."
         : "Se cortó el dictado. Prueba de nuevo o escríbelo.";
     };
-    rec.onend = function(){ rec = null; mic.classList.remove("grabando"); mic.textContent = "🎤 Dictar"; };
+    rec.onend = function(){
+      rec = null; mic.classList.remove("grabando"); mic.textContent = "🎤 Dictar";
+      /* NADA SE MANDA SIN QUE LO MIRE. El dictado se equivoca justo con lo que
+         despues decide el resultado: las duraciones («cuarenta» por «cuarenta
+         y cinco»), los numeros de curso y los nombres. Y si el director dicto,
+         lo mas probable es que no haya leido lo que quedo escrito. */
+      var t = $("texto").value.trim();
+      if (!t) return;
+      vinoDeAudio = true;
+      $("estado-mic").textContent = "";
+      $("revisa").hidden = false;
+      $("revisa").className = "revisa";
+      $("revisa").innerHTML = "<b>Esto es lo que se escuchó</b> (" +
+        t.split(/\s+/).length + " palabras). El dictado se equivoca con las " +
+        "duraciones, los cursos y los nombres, y de eso depende tu resultado: " +
+        "léelo arriba y corrige lo que haga falta. Para seguir contando, " +
+        "toca 🎤 Dictar otra vez.";
+      $("analizar").textContent = "Lo revisé · Clasificar mi día";
+    };
     rec.start();
     mic.classList.add("grabando"); mic.textContent = "⏹ Detener";
     $("estado-mic").textContent = "Grabando. Cuenta tu día en voz alta y toca detener.";
