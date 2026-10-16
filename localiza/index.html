@@ -85,6 +85,33 @@ button:focus-visible{outline:3px solid var(--ambar);outline-offset:2px}
 /* El aviso del dictado y el del tiempo sin contar. Los dos dicen algo que el
    director tiene que leer antes de creerle al numero, asi que van con borde
    ambar y no como nota al pie. */
+/* Las actividades frecuentes, con el color de la categoría que les ponemos.
+   Botones grandes porque esto se usa parado y con el pulgar. */
+.rapidas h3{font:inherit;font-size:12px;font-weight:800;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--texto2);margin:18px 0 8px}
+.rapidas h3:first-child{margin-top:14px}
+.grupo{display:flex;flex-wrap:wrap;gap:8px}
+.grupo button{border:1px solid var(--linea);background:#fff;border-radius:999px;
+  padding:9px 14px;font:inherit;font-size:14px;font-weight:700;color:var(--texto);
+  cursor:pointer;display:inline-flex;align-items:center;gap:8px;line-height:1.2}
+.grupo button:active{transform:scale(.97)}
+.grupo button.puesta{border-color:var(--tinta);background:var(--suave)}
+.grupo button b{font-weight:800;color:var(--texto2);font-size:12px}
+
+.otra{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.otra input{flex:1 1 180px;min-width:0;border:1px solid var(--linea);border-radius:12px;
+  padding:11px 13px;font:inherit;font-size:15px;color:var(--texto);background:#fff}
+.otra select{border:1px solid var(--linea);border-radius:12px;padding:11px 10px;
+  font:inherit;font-size:15px;background:#fff;color:var(--texto)}
+.otra button{border:1px solid var(--linea);background:var(--suave);border-radius:12px;
+  padding:11px 16px;font:inherit;font-size:15px;font-weight:700;color:var(--texto);cursor:pointer}
+/* LA BARRA DE AVANCE ES EL ARREGLO DE LA INFORMACION INCOMPLETA: el director
+   ve cuánto de su jornada todavía no contó, en vez de descubrirlo al final. */
+.avance{height:12px;border-radius:999px;background:var(--suave);border:1px solid var(--linea);
+  overflow:hidden;margin-top:20px;display:flex}
+.avance-barra{height:100%;width:0;background:var(--tinta);transition:width .35s ease}
+.avance-txt{font-size:14px;font-weight:700;color:var(--texto2);margin:8px 0 18px}
+.avance-txt b{color:var(--texto)}
 .bloque p[contenteditable]{outline:none;border-bottom:1px dashed var(--linea);
   padding-bottom:3px;min-height:1.4em}
 .bloque p[contenteditable]:focus{border-bottom-color:var(--ambar);background:#FFF8E8}
@@ -171,45 +198,43 @@ footer a{color:var(--naranja)}
 </section>
 
 <section class="paso" id="p1" hidden>
-  <h2 id="t-relato">3. ¿Qué hiciste realmente?</h2>
-  <p class="ay">Hora por hora, con el detalle que recuerdes. <b>No te juzgues, solo
-  observa.</b> Puedes dictarlo: es más rápido que escribirlo.</p>
-  <textarea id="texto" placeholder="Llegué 7:30 y estuve media hora recibiendo en la puerta. Después firmé papeles del sostenedor como una hora. A las 9 me interrumpió un apoderado sin cita, 20 minutos. Entré a una clase de 5.º básico, 40 minutos…"></textarea>
-  <div class="revisa" id="revisa" hidden></div>
-  <div class="fila">
-    <button class="mic" id="mic" hidden>🎤 Dictar</button>
-    <button class="fuerte" id="analizar">Clasificar mi día</button>
-    <button id="ejemplo-btn">Ver un ejemplo</button>
-    <button id="atras0">Atrás</button>
+  <h2 id="t-relato">3. Arma tu día, bloque por bloque</h2>
+  <p class="ay">Toca lo que hiciste y ajusta los minutos. Eso es todo: la
+  probabilidad de que cada cosa impacte el aprendizaje <b>no la decides tú</b>, la
+  trae el libro, y lo que escribas aparte lo clasifica la IA. <b>No te juzgues,
+  solo observa.</b></p>
+
+  <div class="rapidas" id="rapidas"></div>
+
+  <div class="otra">
+    <input id="otra-txt" type="text" maxlength="90" placeholder="Otra cosa que hiciste; la clasifica la IA">
+    <select id="otra-min"></select>
+    <button id="otra-add">Agregar</button>
   </div>
-  <p class="nota" id="estado-mic"></p>
+
+  <div class="avance"><div class="avance-barra" id="avance-barra"></div></div>
+  <p class="avance-txt" id="avance-txt"></p>
+
+  <div class="leyenda" id="leyenda-bloques" hidden>Toca los minutos para cambiar la
+  duración, y la ✕ para borrar. La clasificación la trae el libro: si de verdad no
+  estás de acuerdo con alguna, tócala.</div>
+  <div id="bloques"></div>
+
+  <div class="fila" id="fila-ia" style="margin-bottom:14px" hidden>
+    <button id="afinar">✨ Qué ve la IA en mi día</button>
+    <span class="nota" id="estado-ia" style="margin:0"></span>
+  </div>
+  <div class="ejemplo" id="aviso-nombres" hidden></div>
+
   <div class="ejemplo">
     <b>Un aviso del libro:</b> casi todos subestimamos cuánto tiempo pasamos en el
     teléfono. Antes de seguir, mira tu tiempo de pantalla y, si es mayor de lo que
     anotaste, agrégalo.
   </div>
-</section>
 
-<section class="paso" id="p2" hidden>
-  <h2>4. Probabilidad de impactar el aprendizaje</h2>
-  <p class="ay" id="quien-clasifico"></p>
-  <div class="fila" style="margin-top:0;margin-bottom:14px">
-    <button class="fuerte" id="afinar">✨ Afinar con IA</button>
-    <span class="nota" id="estado-ia" style="margin:0"></span>
-  </div>
-  <div class="ejemplo" id="aviso-nombres" hidden></div>
-  <div class="leyenda"><b>Todo esto se corrige.</b> Toca el texto de una fila para
-  arreglar lo que se entendió mal, toca Alta, Media o Baja para cambiar la
-  clasificación, los minutos para cambiar la duración y la ✕ para borrarla. Si
-  corriges el texto se vuelve a clasificar sola, salvo que ya la hayas cambiado
-  tú.</div>
-  <div id="bloques"></div>
-  <div class="fila">
-    <button id="agregar">+ Agregar una línea</button>
-  </div>
   <div class="fila">
     <button class="fuerte" id="ver">Ver mi radiografía</button>
-    <button id="volver">Volver al texto</button>
+    <button id="atras0">Atrás</button>
   </div>
 </section>
 
@@ -327,6 +352,43 @@ var NOMBRE = { alta: "Alta", media: "Media", baja: "Baja" };
 var COLOR = { alta: "#0E6E5B", media: "#F0A500", baja: "#6E8794" };
 var DURS = [10, 15, 20, 30, 45, 60, 90, 120, 180];
 
+/* EL CATALOGO DEL DIA, agrupado como lo vive un director y no por categoría:
+   si los botones salieran ordenados por impacto, el orden mismo le estaría
+   dando la respuesta antes de que contara nada.
+   [etiqueta, impacto, minutos típicos, por qué quedó ahí] */
+var CATALOGO = [
+  ["En el aula y con los docentes", [
+    ["Observé una clase", "alta", 45, "observación de aula"],
+    ["Retroalimenté a un docente", "alta", 30, "retroalimentación a un docente"],
+    ["Revisé planificaciones", "alta", 30, "trabajo sobre la planificación"],
+    ["Analicé resultados de aprendizaje", "alta", 45, "análisis de resultados"],
+    ["Trabajé con la UTP", "alta", 45, "trabajo pedagógico con la UTP"],
+    ["Consejo de profesores", "alta", 60, "consejo de profesores"],
+    ["Reunión con un docente, por otro tema", "media", 30, "reunión con un docente"],
+    ["Cubrí un curso sin profesor", "media", 45, "reemplazo de un docente"]
+  ]],
+  ["Con estudiantes y apoderados", [
+    ["Atendí apoderados", "media", 30, "atención de apoderados"],
+    ["Convivencia o disciplina", "media", 30, "convivencia escolar"],
+    ["Recibí en la puerta", "media", 20, "presencia en la entrada"],
+    ["Recreo o patio", "media", 20, "turno de patio"]
+  ]],
+  ["Administración y sistemas", [
+    ["Papeleo e informes", "baja", 60, "papeleo"],
+    ["Plataformas y planillas", "baja", 30, "plataformas y planillas"],
+    ["Correos y WhatsApp", "baja", 30, "correos y mensajes"],
+    ["Reunión con el sostenedor", "media", 60, "coordinación con el sostenedor"],
+    ["Respondí a la DEPROV o la Superintendencia", "baja", 45, "respuesta a la autoridad"],
+    ["Reunión administrativa", "baja", 45, "reunión administrativa"]
+  ]],
+  ["Lo que pasa igual", [
+    ["Interrupción sin cita", "baja", 15, "una interrupción"],
+    ["Alimentación, infraestructura, mantención", "baja", 30, "operación del establecimiento"],
+    ["Almuerzo", "baja", 30, "el almuerzo"],
+    ["Traslados y esperas", "baja", 30, "traslado o espera"]
+  ]]
+];
+
 /* Las seis barreras del libro, tal cual. */
 var BARRERAS = [
   ["La duplicación infinita", "El mismo dato en cinco formatos.", "externa"],
@@ -336,15 +398,6 @@ var BARRERAS = [
   ["El sí automático", "Cada sí es un no a algo más importante.", "interna"],
   ["El perfeccionismo paralizante", "Tres horas puliendo lo que necesitaba 30 minutos.", "interna"]
 ];
-
-var EJEMPLO = "Llegué 7:30 y estuve media hora recibiendo a los estudiantes en la puerta.\n" +
-  "Después firmé papeles del sostenedor y revisé la planilla de matrícula, como una hora.\n" +
-  "A las 9 me interrumpió un apoderado sin cita, 20 minutos.\n" +
-  "Entré a una clase de 5.º básico, 40 minutos, con la pauta de observación.\n" +
-  "Antes del recreo tuve que cubrir un curso porque una profesora estaba con licencia, 45 minutos.\n" +
-  "Almuerzo rápido y reunión con la jefa de UTP sobre los resultados del diagnóstico, 30 minutos.\n" +
-  "Toda la tarde en correos, el informe mensual y tres certificados, como dos horas.\n" +
-  "Revisando WhatsApp entre medio, unos 30 minutos.";
 
 function $(id){ return document.getElementById(id); }
 
@@ -379,8 +432,9 @@ $("horas").addEventListener("click", function(e){
 $("seguir").addEventListener("click", function(){
   $("h-dia").textContent = DIA === "manana" ? "de hoy" :
     (DIA === "viernes" ? "del viernes" : "de ayer");
-  $("t-relato").textContent = "3. ¿Qué hiciste " + ETIQ[DIA] + "?";
-  $("p0").hidden = true; $("p1").hidden = false; window.scrollTo(0, 0);
+  $("t-relato").textContent = "3. Arma " + ETIQ[DIA] + ", tocando lo que hiciste";
+  $("p0").hidden = true; $("p1").hidden = false; pintarAvance();
+  window.scrollTo(0, 0);
 });
 $("atras0").addEventListener("click", function(){ $("p1").hidden = true; $("p0").hidden = false; });
 pintarHoras();
@@ -439,21 +493,67 @@ function clasificar(t){
   return { tipo: mejor, porque: razon };
 }
 
-function partir(texto){
-  /* DICTANDO NO HAY PUNTOS. El relato llega corrido: «en la mañana tuve una
-     reunión después estuve una hora con el sostenedor después entré a una
-     clase». Cortando solo por punto y coma, todo el día quedaba en UNA línea
-     de tres horas y no había nada que corregir. Así que también se corta
-     antes de las palabras con las que uno encadena el día al hablar. Si un
-     corte queda raro, la línea se edita o se borra, que es justo el punto. */
-  var cortes = /\s*,?\s*(?:y\s+)?(?=(?:después|despues|luego|más tarde|mas tarde|entonces|enseguida|acto seguido|al mediodía|al mediodia|en la mañana|en la manana|en la tarde)\b)/gi;
-  return texto.replace(cortes, "\n").split(/\n+|(?<=[.;])\s+/)
-    .map(function(x){ return x.trim(); })
-    .filter(function(x){ return x.length > 8; })
-    .slice(0, 40);
-}
-
 var items = [];
+
+/* ------------------------------------------- armar el día tocando el catálogo
+   Un toque agrega el bloque con sus minutos típicos. Tocar de nuevo la misma
+   actividad SUMA otra vez: así se cuentan las tres interrupciones del día sin
+   tener que pensar en cuántos minutos fueron en total. */
+$("rapidas").innerHTML = CATALOGO.map(function(g, gi){
+  return "<h3>" + g[0] + "</h3><div class=\"grupo\">" + g[1].map(function(a, ai){
+    return '<button data-g="' + gi + '" data-a="' + ai + '">' + a[0] + "</button>";
+  }).join("") + "</div>";
+}).join("");
+
+$("rapidas").addEventListener("click", function(e){
+  var b = e.target.closest("[data-a]");
+  if (!b) return;
+  var a = CATALOGO[+b.dataset.g][1][+b.dataset.a];
+  items.push({ texto: a[0], tipo: a[1], porque: a[3], min: a[2], boton: b.dataset.g + "-" + b.dataset.a });
+  b.classList.add("puesta");
+  pintarBloques(); pintarAvance();
+});
+
+/* Lo que el director escribe no está en el catálogo, así que no tiene
+   clasificación de fábrica: la pone la IA cuando toca «qué ve la IA», y
+   mientras tanto queda con la de la lista de palabras del teléfono, dicho. */
+$("otra-min").innerHTML = DURS.map(function(d){
+  return '<option value="' + d + '"' + (d === 30 ? " selected" : "") + ">" + rotulo(d) + "</option>";
+}).join("");
+$("otra-add").addEventListener("click", function(){
+  var t = $("otra-txt").value.trim();
+  if (!t) { $("otra-txt").focus(); return; }
+  var c = clasificar(t);
+  items.push({ texto: t, tipo: c.tipo, porque: c.porque + ", según tu teléfono",
+               min: +$("otra-min").value, libre: true });
+  $("otra-txt").value = "";
+  pintarBloques(); pintarAvance();
+});
+$("otra-txt").addEventListener("keydown", function(e){
+  if (e.key === "Enter") { e.preventDefault(); $("otra-add").click(); }
+});
+
+/* LA BARRA DE AVANCE ES EL ARREGLO DE LA INFORMACION INCOMPLETA. El hueco se
+   ve mientras se arma el día y no al final: un director que lee «te faltan
+   3 h» agrega esas tres horas; uno que no lo ve entrega medio día y se lleva
+   un número que es mitad supuesto. */
+function pintarAvance(){
+  var suma = items.reduce(function(a, it){ return a + it.min; }, 0);
+  var meta = HORAS * 60, falta = meta - suma;
+  $("avance-barra").style.width = Math.min(100, Math.round(suma / meta * 100)) + "%";
+  $("avance-barra").style.background = falta <= 10 ? "var(--alta)" : "var(--tinta)";
+  $("avance-txt").innerHTML = !suma
+    ? "Tu jornada ese día: <b>" + HORAS + " h</b>. Todavía no cuentas nada."
+    : (falta > 10
+        ? "Llevas <b>" + rotulo(suma) + "</b> de " + HORAS + " h. Faltan <b>" +
+          rotulo(falta) + "</b>."
+        : (falta < -10
+            ? "Llevas <b>" + rotulo(suma) + "</b>: " + rotulo(-falta) +
+              " más que tus horas de contrato. Así es el oficio."
+            : "Llevas <b>" + rotulo(suma) + "</b>: tu jornada completa."));
+  $("leyenda-bloques").hidden = !items.length;
+  $("fila-ia").hidden = !items.length;
+}
 function rotulo(m){
   if (m < 60) return m + " min";
   var h = Math.floor(m / 60), r = m % 60;
@@ -466,10 +566,11 @@ function pintarBloques(){
   items.forEach(function(it, i){
     var d = document.createElement("div");
     d.className = "bloque";
-    var tags = ["alta", "media", "baja"].map(function(k){
-      return '<button class="tag ' + k + '" data-i="' + i + '" data-k="' + k + '" ' +
-        'aria-pressed="' + (it.tipo === k) + '">' + NOMBRE[k] + "</button>";
-    }).join("");
+    /* NO SE LE PREGUNTA AL DIRECTOR. La categoría se muestra, con su razón, y
+       solo la de su propia fila se puede cambiar tocándola: el ejercicio es
+       mirar el día, no clasificar veinte veces. */
+    var tags = '<button class="tag ' + it.tipo + '" data-i="' + i + '" data-k="' +
+      it.tipo + '" aria-pressed="true">' + NOMBRE[it.tipo] + "</button>";
     /* EL TEXTO SE EDITA. Lo que está escrito acá salió de un dictado y el
        dictado se equivoca justo con lo que más pesa: «cuarenta» por «cuarenta
        y cinco», el curso, la sigla. Si la línea no se puede tocar, el error
@@ -494,7 +595,7 @@ $("bloques").addEventListener("focusout", function(e){
   if (!campo) return;
   var i = +campo.dataset.t, it = items[i], nuevo = campo.textContent.trim();
   if (!it || nuevo === it.texto) return;
-  if (!nuevo) { items.splice(i, 1); pintarBloques(); return; }
+  if (!nuevo) { items.splice(i, 1); pintarBloques(); pintarAvance(); return; }
   it.texto = nuevo;
   var caja = campo.parentNode;
   if (!it.fijo) {
@@ -508,6 +609,7 @@ $("bloques").addEventListener("focusout", function(e){
   if (!it.durFija) {
     it.min = duracion(nuevo);
     caja.querySelector("[data-dur]").textContent = rotulo(it.min);
+    pintarAvance();
   }
 });
 
@@ -515,43 +617,28 @@ $("bloques").addEventListener("click", function(e){
   var b = e.target.closest("button");
   if (!b) return;
   if (b.dataset.k) {
-    items[b.dataset.i].tipo = b.dataset.k;
-    items[b.dataset.i].porque = "lo cambiaste tú";
-    items[b.dataset.i].fijo = true;
+    var orden = ["alta", "media", "baja"], it2 = items[b.dataset.i];
+    it2.tipo = orden[(orden.indexOf(it2.tipo) + 1) % 3];
+    it2.porque = "lo cambiaste tú";
+    it2.fijo = true;
     pintarBloques();
   } else if (b.dataset.dur) {
     var it = items[b.dataset.dur];
     it.min = DURS[(DURS.indexOf(it.min) + 1) % DURS.length];
     it.durFija = true;
-    pintarBloques();
-  } else if (b.dataset.borrar) { items.splice(b.dataset.borrar, 1); pintarBloques(); }
-});
-
-var vinoDeAudio = false;
-$("texto").addEventListener("input", function(){
-  if (!vinoDeAudio || $("revisa").hidden) return;
-  $("revisa").className = "revisa listo";
-  $("revisa").innerHTML = "<b>Lo corregiste.</b> Cuando esté como fue tu día, " +
-    "toca clasificar.";
-});
-/* Se agrega acá y no volviendo al texto: volver al texto y clasificar de
-   nuevo rehace todo desde cero y se pierden las correcciones, que a esta
-   altura son lo más valioso que hay en la pantalla. */
-$("agregar").addEventListener("click", function(){
-  items.push({ texto: "", tipo: "media", porque: "escribila y la clasifico", min: 30 });
-  pintarBloques();
-  var ps = $("bloques").querySelectorAll("p[contenteditable]");
-  if (ps.length) {
-    ps[ps.length - 1].focus();
-    ps[ps.length - 1].scrollIntoView({ block: "center" });
+    pintarBloques(); pintarAvance();
+  } else if (b.dataset.borrar) {
+    items.splice(b.dataset.borrar, 1); pintarBloques(); pintarAvance();
   }
 });
-$("ejemplo-btn").addEventListener("click", function(){ $("texto").value = EJEMPLO; });
-$("volver").addEventListener("click", function(){ $("p2").hidden = true; $("p1").hidden = false; });
+
 $("otra").addEventListener("click", function(){
-  $("texto").value = ""; items = []; analisisIA = "";
-  vinoDeAudio = false; $("revisa").hidden = true;
-  $("analizar").textContent = "Clasificar mi día";
+  items = []; analisisIA = "";
+  pintarBloques(); pintarAvance();
+  $("estado-ia").textContent = ""; $("aviso-nombres").hidden = true;
+  [].forEach.call($("rapidas").querySelectorAll(".puesta"), function(b){
+    b.classList.remove("puesta");
+  });
   /* EL BOTON DE SUMAR QUEDABA MUERTO. Al sumar se deshabilita y pasa a decir
      «Ya lo sumaste», y empezar de nuevo no lo tocaba: el segundo intento no
      mandaba nada y, como el mensaje de la vez anterior seguia en pantalla,
@@ -562,21 +649,8 @@ $("otra").addEventListener("click", function(){
   $("estado-sala").textContent = yaSumo
     ? "Ojo: ya sumaste un resultado antes. Si sumas este, el grupo cuenta dos."
     : "";
-  $("p3").hidden = true; $("p2").hidden = true; $("p1").hidden = true; $("p0").hidden = false;
+  $("p3").hidden = true; $("p1").hidden = true; $("p0").hidden = false;
   window.scrollTo(0, 0);
-});
-
-$("analizar").addEventListener("click", function(){
-  var t = $("texto").value.trim();
-  if (t.length < 20) { $("texto").focus(); return; }
-  items = partir(t).map(function(x){
-    var c = clasificar(x);
-    return { texto: x, tipo: c.tipo, porque: c.porque, min: duracion(x) };
-  });
-  $("quien-clasifico").innerHTML = "Esto lo clasificó <b>una lista de palabras que corre " +
-    "en tu teléfono</b>, no una IA: se equivoca. Corrígela, que ese es el ejercicio.";
-  pintarBloques();
-  $("p1").hidden = true; $("p2").hidden = false; window.scrollTo(0, 0);
 });
 
 /* ----------------------------------------------------------- el resultado */
@@ -679,7 +753,7 @@ $("ver").addEventListener("click", function(){
       "proporción a propósito: el tiempo que uno no recuerda es el fragmentado, " +
       "no la clase a la que entró, y repartirlo así le daría mejor resultado a quien " +
       "contó menos." +
-      (grave ? " <b>Acá eso pesa más que lo que contaste</b>, así que el número de " +
+      (grave ? " <b>Aquí eso pesa más que lo que contaste</b>, así que el número de " +
         "abajo es en buena parte un supuesto." : "") +
       '<div class="fila"><button id="completar">Agregar lo que falta</button></div></div>';
   }
@@ -690,14 +764,15 @@ $("ver").addEventListener("click", function(){
     '<div class="cifras">' +
       '<div class="cifra alta"><div class="num">' + pct.alta + '%</div>' +
       '<div class="et">Alta probabilidad de impactar el aprendizaje</div>' +
-      '<div class="pie">Lo que marcaste como alta, actividad por actividad. Es tu ' +
-      'juicio, no una categoría de tarea.' + (hueco > 0 ? ' No le sumamos nada del ' +
-      'tiempo que no contaste.' : '') + '</div></div>' +
+      '<div class="pie">Las actividades a las que el libro les da probabilidad ' +
+      'alta. No es «liderazgo pedagógico»: es probabilidad de llegar al ' +
+      'aprendizaje.' + (hueco > 0 ? ' No le sumamos nada del tiempo que no ' +
+      'contaste.' : '') + '</div></div>' +
       '<div class="cifra media"><div class="num">' + conImpacto + '%</div>' +
       '<div class="et">Alguna probabilidad: alta más media</div>' +
-      '<div class="pie">Todo lo que, según tú, llega al aprendizaje por algún ' +
-      'camino.' + (hueco > 0 ? ' Incluye ' + rotulo(imp.media) + ' del tiempo que no ' +
-      'contaste.' : '') + '</div></div>' +
+      '<div class="pie">Alta más media: todo lo que llega al aprendizaje por ' +
+      'algún camino, directo o no.' + (hueco > 0 ? ' Incluye ' + rotulo(imp.media) +
+      ' del tiempo que no contaste.' : '') + '</div></div>' +
     '</div>' +
     '<div class="barra">' + barras + "</div>" +
     '<div class="clave">' + clave + "</div>" +
@@ -707,9 +782,8 @@ $("ver").addEventListener("click", function(){
     "<p><b>Y una medida parecida, que no es la misma.</b> PULS 2024 le preguntó a casi " +
     "5.000 directores de la región cuánto de su tiempo se va en tareas administrativas y " +
     "cuánto en liderazgo pedagógico: dio <b>76% y 24%</b>. Eso clasifica el tipo de " +
-    "tarea. Esto de acá no: acá cada actividad quedó donde <b>tú</b> juzgaste que " +
-    "quedaba, por su probabilidad de llegar al aprendizaje. Sirven para mirarse, no " +
-    "para restarse.</p>" +
+    "tarea. Esto no: aquí cada actividad lleva la probabilidad que le da el libro. " +
+    "Sirven para mirarse, no para restarse.</p>" +
     '<p class="dato">El Director LIBRE, cap. 5 · PULS 2024, citado en el libro</p></div>' +
     (analisisIA ? '<div class="tarjeta ia"><h3>Lo que ve la IA en tu día</h3><p>' +
       esc(analisisIA) + "</p></div>" : "") +
@@ -731,8 +805,8 @@ $("ver").addEventListener("click", function(){
     var b = e.target.closest(".barrera");
     if (b) b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true");
     if (e.target.id === "completar") {
-      $("p3").hidden = true; $("p2").hidden = false;
-      $("agregar").click();
+      $("p3").hidden = true; $("p1").hidden = false;
+      $("rapidas").scrollIntoView({ block: "start" });
     }
   });
 
@@ -747,7 +821,7 @@ $("ver").addEventListener("click", function(){
       return it.texto.slice(0, 60) + " (" + rotulo(it.min) + ")"; }).join("; ") +
     (analisisIA ? "\n\n" + analisisIA : "");
 
-  $("p2").hidden = true; $("p3").hidden = false; window.scrollTo(0, 0);
+  $("p1").hidden = true; $("p3").hidden = false; window.scrollTo(0, 0);
 });
 
 $("copiar").addEventListener("click", function(){
@@ -800,25 +874,39 @@ function nombresPropios(t){
   });
   return out.slice(0, 6);
 }
+/* LA IA MIRA EL DIA, NO LO REHACE. Antes volvía a partir y a clasificar todo
+   desde un texto: ahora los bloques del catálogo ya vienen con la
+   clasificación del libro y pisarla sería cambiarle la medición al director
+   sin avisar. Lo que sí hace la IA es clasificar lo que el director escribió
+   por su cuenta, que es lo único que no estaba en el catálogo, y mirar el
+   conjunto. */
 function afinar(){
   var b = $("afinar");
   b.disabled = true;
   $("estado-ia").textContent = "Pensando…";
+  var dia = items.map(function(it){ return it.texto + ", " + rotulo(it.min); }).join(". ");
   fetch(API + "clasificar", {
     method: "POST", headers: { "content-type": "application/json" },
-    body: JSON.stringify({ texto: $("texto").value.trim() })
+    body: JSON.stringify({ texto: dia })
   }).then(function(r){ return r.json().then(function(d){ return { ok: r.ok, d: d }; }); })
     .then(function(res){
       if (!res.ok || !res.d.bloques) throw new Error(res.d.error || "sin respuesta");
-      items = res.d.bloques.map(function(x){
-        return { texto: x.texto, tipo: x.tipo, porque: x.porque || "", min: x.min };
+      /* Solo se tocan las filas que el director escribió a mano y no cambió. */
+      var porTexto = {};
+      res.d.bloques.forEach(function(x){ porTexto[(x.texto || "").toLowerCase().slice(0, 30)] = x; });
+      var tocadas = 0;
+      items.forEach(function(it){
+        if (!it.libre || it.fijo) return;
+        var x = porTexto[it.texto.toLowerCase().slice(0, 30)];
+        if (!x || !x.tipo) return;
+        it.tipo = x.tipo; it.porque = (x.porque || "") + ", según la IA"; tocadas++;
       });
       analisisIA = res.d.analisis || "";
       pintarBloques();
-      $("quien-clasifico").innerHTML = "Esto lo clasificó <b>una IA</b>, y también se " +
-        "equivoca. Cada fila dice su razón: si no estás de acuerdo, cámbiala.";
-      $("estado-ia").textContent = "Listo, revísalo igual.";
-      b.textContent = "✨ Afinar de nuevo";
+      $("estado-ia").textContent = tocadas
+        ? "Clasificó lo que escribiste. El resto queda como lo trae el libro."
+        : "Miró tu día. Lo vas a ver en la radiografía.";
+      b.textContent = "✨ Mirar de nuevo";
     }).catch(function(e){
       $("estado-ia").textContent = "No se pudo afinar (" + e.message +
         "). Te queda la clasificación del teléfono.";
@@ -827,65 +915,24 @@ function afinar(){
 $("afinar").addEventListener("click", function(){
   var caja = $("aviso-nombres");
   if (!caja.hidden) { caja.hidden = true; afinar(); return; }
-  var n = nombresPropios($("texto").value);
+  /* Solo pueden traer un nombre las filas que escribió el director: las del
+     catálogo las escribimos nosotros. */
+  var n = nombresPropios(items.filter(function(it){ return it.libre; })
+    .map(function(it){ return it.texto; }).join(". "));
   if (!n.length) { afinar(); return; }
   caja.hidden = false;
-  caja.innerHTML = "<b>Un momento antes de enviar.</b> Esto parece el nombre de una " +
+  caja.innerHTML = "<b>Un momento antes de mandarlo a la IA.</b> Esto parece el nombre de una " +
     "persona: <b>" + esc(n.join(", ")) + "</b>. Si es un docente o un estudiante, " +
     "cámbialo por algo como «una profesora de 5.º». Para el ejercicio da lo mismo." +
     '<div class="fila"><button id="igual">Enviar igual</button>' +
     '<button id="cambio" class="fuerte">Lo voy a cambiar</button></div>';
   $("igual").addEventListener("click", function(){ caja.hidden = true; afinar(); });
   $("cambio").addEventListener("click", function(){
-    caja.hidden = true; $("p2").hidden = true; $("p1").hidden = false; $("texto").focus();
+    caja.hidden = true; $("otra-txt").focus();
+    $("bloques").scrollIntoView({ block: "start" });
   });
 });
 
-/* --------------------------------------------------------------- dictado */
-(function(){
-  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { $("estado-mic").textContent = "Este navegador no dicta: escríbelo nomás."; return; }
-  var mic = $("mic"), rec = null, base = "";
-  mic.hidden = false;
-  mic.addEventListener("click", function(){
-    if (rec) { rec.stop(); return; }
-    rec = new SR();
-    rec.lang = "es-CL"; rec.continuous = true; rec.interimResults = true;
-    base = $("texto").value ? $("texto").value + "\n" : "";
-    rec.onresult = function(e){
-      var t = "";
-      for (var i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
-      $("texto").value = base + t;
-    };
-    rec.onerror = function(e){
-      $("estado-mic").textContent = e.error === "not-allowed"
-        ? "No diste permiso al micrófono. Puedes escribirlo."
-        : "Se cortó el dictado. Prueba de nuevo o escríbelo.";
-    };
-    rec.onend = function(){
-      rec = null; mic.classList.remove("grabando"); mic.textContent = "🎤 Dictar";
-      /* NADA SE MANDA SIN QUE LO MIRE. El dictado se equivoca justo con lo que
-         despues decide el resultado: las duraciones («cuarenta» por «cuarenta
-         y cinco»), los numeros de curso y los nombres. Y si el director dicto,
-         lo mas probable es que no haya leido lo que quedo escrito. */
-      var t = $("texto").value.trim();
-      if (!t) return;
-      vinoDeAudio = true;
-      $("estado-mic").textContent = "";
-      $("revisa").hidden = false;
-      $("revisa").className = "revisa";
-      $("revisa").innerHTML = "<b>Esto es lo que se escuchó</b> (" +
-        t.split(/\s+/).length + " palabras). El dictado se equivoca con las " +
-        "duraciones, los cursos y los nombres, y de eso depende tu resultado: " +
-        "léelo arriba y corrige lo que haga falta. Para seguir contando, " +
-        "toca 🎤 Dictar otra vez.";
-      $("analizar").textContent = "Lo revisé · Clasificar mi día";
-    };
-    rec.start();
-    mic.classList.add("grabando"); mic.textContent = "⏹ Detener";
-    $("estado-mic").textContent = "Grabando. Cuenta tu día en voz alta y toca detener.";
-  });
-})();
 </script>
 </body>
 </html>
