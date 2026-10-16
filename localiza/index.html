@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Localiza tus fugas de tiempo</title>
+<!--
+  L de LOCALIZA. El primer ejercicio del libro, hecho en el telefono.
+
+  POR QUE NO LLAMA A NINGUNA IA. Esto lo abren cuarenta directores a la vez en
+  una sala, desde su propio telefono, sin cuenta de nada. Una API necesitaria
+  una clave metida en la pagina, que es justo lo que no se reparte. Asi que la
+  clasificacion es un lexico en castellano escolar chileno que corre en el
+  telefono, y el director confirma o corrige cada bloque con un toque. El
+  resultado no es mejor que el de un modelo, pero es de ellos, es instantaneo y
+  no sale del aparato.
+
+  EL DICTADO ES DEL NAVEGADOR. SpeechRecognition no manda audio a ningun lado
+  nuestro. Donde no existe, se escribe, y el boton no aparece.
+-->
+<style>
+/* La identidad del libro: azul petroleo de la tapa y su ambar, sobre blanco. */
+:root{
+  --tinta:#022C3A; --tinta2:#04202B; --ambar:#FBAE00; --naranja:#E8590C;
+  --fondo:#FFFFFF; --suave:#F3F7F8; --linea:#D2DDE1; --texto:#022C3A;
+  --texto2:#48606B; --verde:#2F7A52; --rojo:#B8430A; --azul:#1D5C8F;
+  --sombra:0 1px 2px rgba(2,44,58,.06), 0 10px 30px -18px rgba(2,44,58,.35);
+  --titulo:'Bebas Neue','Arial Narrow',Impact,sans-serif;
+  --fuente:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--fondo);color:var(--texto);font-family:var(--fuente);
+  font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.env{max-width:720px;margin:0 auto;padding-inline:18px}
+
+header{background:var(--tinta);color:#fff;padding-block:22px 20px}
+.ceja{font-size:12.5px;font-weight:800;color:var(--ambar);letter-spacing:.02em}
+h1{font-family:var(--titulo);font-size:clamp(34px,10vw,54px);line-height:.95;margin:6px 0 0;
+  text-transform:uppercase;letter-spacing:.01em}
+h1 em{font-style:normal;color:var(--ambar)}
+header p{font-size:14.5px;color:#9fb4bf;margin:8px 0 0}
+
+.paso{padding-block:26px}
+.paso h2{font-family:var(--titulo);font-size:30px;text-transform:uppercase;margin:0 0 4px;
+  letter-spacing:.01em}
+.paso .ay{font-size:14.5px;color:var(--texto2);margin-bottom:16px}
+textarea{width:100%;min-height:190px;font:inherit;font-size:16px;line-height:1.5;
+  padding:14px 15px;border:2px solid var(--linea);border-radius:14px;background:var(--suave);
+  color:var(--texto);resize:vertical}
+textarea:focus-visible{outline:2px solid var(--ambar);outline-offset:1px}
+.fila{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px;align-items:center}
+button{font:inherit;font-weight:800;cursor:pointer;border-radius:99px;border:2px solid var(--linea);
+  background:#fff;color:var(--texto2);padding:11px 18px;font-size:15px}
+button:hover{border-color:var(--tinta);color:var(--tinta)}
+button.fuerte{background:var(--ambar);border-color:var(--ambar);color:var(--tinta)}
+button.fuerte:hover{filter:brightness(1.06);color:var(--tinta)}
+button.mic{background:var(--tinta);border-color:var(--tinta);color:#fff}
+button.mic.grabando{background:var(--rojo);border-color:var(--rojo);animation:lat 1.1s infinite}
+@keyframes lat{50%{filter:brightness(1.25)}}
+button:disabled{opacity:.5;cursor:default}
+button:focus-visible{outline:3px solid var(--ambar);outline-offset:2px}
+.nota{font-size:13px;color:var(--texto2);margin-top:10px}
+.ejemplo{background:var(--suave);border:1px solid var(--linea);border-left:3px solid var(--ambar);
+  border-radius:12px;padding:12px 14px;font-size:14px;color:var(--texto2);margin-top:14px}
+.ejemplo b{color:var(--texto)}
+
+/* ---------------------------------------------------------- los bloques */
+.bloque{background:#fff;border:1px solid var(--linea);border-radius:14px;padding:13px 14px;
+  margin-bottom:10px;box-shadow:var(--sombra)}
+.bloque p{margin:0 0 10px;font-size:15.5px}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font-size:12.5px;font-weight:800;padding:6px 11px;border-radius:99px;border:2px solid var(--linea);
+  background:#fff;color:var(--texto2);cursor:pointer}
+.tag[aria-pressed="true"]{color:#fff}
+.tag.ped[aria-pressed="true"]{background:var(--verde);border-color:var(--verde)}
+.tag.suyo[aria-pressed="true"]{background:var(--azul);border-color:var(--azul)}
+.tag.del[aria-pressed="true"]{background:var(--ambar);border-color:var(--ambar);color:var(--tinta)}
+.tag.int[aria-pressed="true"]{background:var(--rojo);border-color:var(--rojo)}
+.dur{margin-left:auto;font-family:var(--mono);font-size:13px;font-weight:700;
+  border:2px solid var(--linea);border-radius:99px;padding:5px 12px;background:#fff;
+  color:var(--texto2);cursor:pointer}
+.sep{height:1px;background:var(--linea);margin:11px 0}
+.leyenda{font-size:13px;color:var(--texto2);margin-bottom:14px}
+
+/* --------------------------------------------------------- el resultado */
+.titular{font-family:var(--titulo);font-size:clamp(30px,8vw,46px);line-height:1;
+  text-transform:uppercase;margin:0 0 10px}
+.titular span{color:var(--naranja)}
+.barra{display:flex;height:34px;border-radius:10px;overflow:hidden;margin:16px 0 10px;
+  border:1px solid var(--linea)}
+.barra div{display:flex;align-items:center;justify-content:center;font-size:12px;
+  font-weight:800;color:#fff}
+.clave{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--texto2);
+  margin-bottom:18px}
+.clave i{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:5px}
+.tarjeta{background:var(--suave);border:1px solid var(--linea);border-radius:14px;
+  padding:16px 17px;margin-bottom:12px}
+.tarjeta h3{font-size:17px;margin:0 0 6px}
+.tarjeta p{margin:0;font-size:15px;color:var(--texto2)}
+.tarjeta b{color:var(--texto)}
+.comparar{border-left:3px solid var(--ambar)}
+.dato{font-family:var(--mono);font-size:12.5px;color:var(--texto2);margin-top:4px}
+footer{border-top:1px solid var(--linea);margin-top:26px;padding-block:20px 50px;
+  font-size:13px;color:var(--texto2)}
+footer a{color:var(--naranja)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<header><div class="env">
+  <div class="ceja">El Director LIBRE · Banco Mundial</div>
+  <h1>L de <em>Localiza</em></h1>
+  <p>Cuenta tu día de ayer. En dos minutos sabes en qué se te fue.</p>
+</div></header>
+
+<main class="env">
+
+<section class="paso" id="p1">
+  <h2>1. Tu día de ayer</h2>
+  <p class="ay">Hora por hora, con el detalle que recuerdes. Puedes dictarlo: es más
+  rápido que escribirlo.</p>
+  <textarea id="texto" placeholder="Llegué 7:30 y estuve media hora en la puerta recibiendo. Después firmé papeles del sostenedor como una hora. A las 9 me interrumpió un apoderado sin cita, 20 minutos. Entré a una clase de 5.º básico, 40 minutos…"></textarea>
+  <div class="fila">
+    <button class="mic" id="mic" hidden>🎤 Dictar</button>
+    <button class="fuerte" id="analizar">Clasificar mi día</button>
+    <button id="ejemplo-btn">Ver un ejemplo</button>
+  </div>
+  <p class="nota" id="estado-mic"></p>
+  <div class="ejemplo">
+    <b>Nada de esto sale de tu teléfono.</b> No hay cuenta, no hay servidor y no se guarda
+    nada: si cierras la página, se borra. El dictado lo hace tu propio navegador.
+  </div>
+</section>
+
+<section class="paso" id="p2" hidden>
+  <h2>2. Revisá la clasificación</h2>
+  <p class="ay">Esto lo clasificó una lista de palabras, no una IA: <b>se equivoca</b>.
+  Toca para corregir el tipo y la duración. Eso es parte del ejercicio.</p>
+  <div class="leyenda">Si un bloque no corresponde, bórralo con la ✕.</div>
+  <div id="bloques"></div>
+  <div class="fila">
+    <button class="fuerte" id="ver">Ver mi diagnóstico</button>
+    <button id="volver">Volver al texto</button>
+  </div>
+</section>
+
+<section class="paso" id="p3" hidden>
+  <div id="resultado"></div>
+  <div class="fila">
+    <button class="fuerte" id="copiar">Copiar mi diagnóstico</button>
+    <button id="otra">Empezar de nuevo</button>
+  </div>
+</section>
+
+</main>
+
+<footer class="env">
+  <p>Ejercicio de la L del método <b>El Director LIBRE</b> (Banco Mundial). El punto de
+  comparación es PULS 2024, la encuesta sobre promoción del liderazgo en las escuelas, con
+  casi 5.000 directores de América Latina.</p>
+  <p style="margin-top:8px"><a href="../">Los cuatro casos de la IA</a> ·
+  <a href="https://redevidencia.org/iniciativas/el-director-libre.html" target="_blank" rel="noopener">El libro y los testimonios</a></p>
+</footer>
+
+<script>
+/* ------------------------------------------------------------- el lexico
+   Castellano escolar chileno. Cada categoria tiene sus senales; gana la que
+   suma mas. Un termino largo que contiene a otro corto no se cuenta dos veces
+   («consejo de profesores» no suma tambien por «profesor»). */
+var LEX = {
+  ped: ["observ", "aula", "sala de clase", "clase de", "entré a una clase", "entre a una clase",
+        "retroalimenta", "acompañamiento", "acompañé", "planificaci", "currículum", "curriculum",
+        "jefa de utp", "jefe de utp", "utp", "consejo de profesores", "reflexión pedagógica",
+        "reflexion pedagogica", "evaluación de aprendizaje", "resultados de aprendizaje",
+        "diagnóstico", "diagnostico", "simce", "plan lector", "lectura", "cuadernos",
+        "revisé planificaci", "pauta de observaci", "feedback", "docente sobre su clase",
+        "modelé", "coaching", "visita de aula", "pme"],
+  suyo: ["sostenedor", "entrevista", "reunión con apoderado", "reunion con apoderado",
+         "consejo escolar", "comité", "comite", "convivencia", "dupla", "psicosocial",
+         "profesor jefe", "equipo directivo", "superintendencia", "deprov", "slep",
+         "ministerio", "mineduc", "seremi", "denuncia", "situación de un estudiante",
+         "situacion de un estudiante", "familia de", "conversación difícil", "conversacion dificil"],
+  del: ["informe", "papel", "firm", "acta", "oficio", "correo", "mail", "planilla",
+        "matrícula", "matricula", "sige", "rendición", "rendicion", "boleta", "factura",
+        "compra", "cotiza", "inventario", "licitación", "licitacion", "presupuesto",
+        "asistencia del mes", "estadística", "estadistica", "formulario", "certificado",
+        "archivo", "trámite", "tramite", "proveedor", "mantención", "mantencion"],
+  int: ["interrump", "sin cita", "me buscaron", "imprevisto", "emergencia", "de repente",
+        "apareció", "aparecio", "llamado", "llamaron", "me llamó", "me llamo", "urgente",
+        "tuve que cubrir", "reemplaz", "licencia de", "se enfermó", "se enfermo", "accidente",
+        "pelea", "me interceptaron", "vino a verme", "sin aviso", "apoderado en la puerta"]
+};
+var NOMBRE = { ped: "Pedagógico", suyo: "Suyo, no pedagógico", del: "Delegable", int: "Interrupción" };
+var COLOR = { ped: "#2F7A52", suyo: "#1D5C8F", del: "#FBAE00", int: "#B8430A" };
+var DURS = [10, 15, 20, 30, 45, 60, 90, 120, 180];
+
+var EJEMPLO = "Llegué 7:30 y estuve media hora en la puerta recibiendo a los estudiantes.\n" +
+  "Después firmé papeles del sostenedor y revisé la planilla de matrícula, como una hora.\n" +
+  "A las 9 me interrumpió un apoderado sin cita, 20 minutos.\n" +
+  "Entré a una clase de 5.º básico, 40 minutos, con la pauta de observación.\n" +
+  "Antes del recreo tuve que cubrir un curso porque una profesora estaba con licencia, 45 minutos.\n" +
+  "Almuerzo rápido y reunión con la jefa de UTP sobre los resultados del diagnóstico, 30 minutos.\n" +
+  "Toda la tarde en correos, el informe mensual y tres certificados, como dos horas.\n" +
+  "A las 17 me llamaron del DEPROV por un reporte, media hora.";
+
+function $(id){ return document.getElementById(id); }
+
+/* --------------------------------------------------------- la duracion
+   Se busca en el propio texto antes de suponer. «media hora», «20 minutos»,
+   «como una hora», «toda la tarde». */
+function duracion(t){
+  /* Lo explicito manda sobre lo vago. «Toda la tarde en correos, el informe y
+     tres certificados, como dos horas» son dos horas, no una tarde: si lo
+     vago gana, el bloque mas largo del dia queda inflado y el porcentaje
+     final miente. */
+  var s = t.toLowerCase(), m;
+  if ((m = s.match(/(\d+)\s*(min\b|minutos)/))) return Math.min(300, parseInt(m[1], 10));
+  if ((m = s.match(/(\d+)\s*(h\b|hora|horas)/))) return Math.min(300, parseInt(m[1], 10) * 60);
+  if (/hora y media/.test(s)) return 90;
+  if (/media hora/.test(s)) return 30;
+  if (/una hora/.test(s)) return 60;
+  if (/dos horas/.test(s)) return 120;
+  if (/tres horas/.test(s)) return 180;
+  if (/toda la mañana|toda la tarde/.test(s)) return 180;
+  if (/un rato|unos minutos|rápido|rapido/.test(s)) return 15;
+  return 30;
+}
+
+function clasificar(t){
+  var s = t.toLowerCase(), mejor = "suyo", max = 0;
+  for (var k in LEX) {
+    var presentes = LEX[k].filter(function(p){ return s.indexOf(p) >= 0; });
+    var n = 0;
+    presentes.forEach(function(p){
+      var tapado = presentes.some(function(o){ return o !== p && o.indexOf(p) >= 0; });
+      if (!tapado) n++;
+    });
+    if (n > max) { max = n; mejor = k; }
+  }
+  return max === 0 ? "suyo" : mejor;
+}
+
+function partir(texto){
+  return texto.split(/\n+|(?<=[.;])\s+/)
+    .map(function(x){ return x.trim(); })
+    .filter(function(x){ return x.length > 8; })
+    .slice(0, 40);
+}
+
+var items = [];
+
+function pintarBloques(){
+  var cont = $("bloques");
+  cont.innerHTML = "";
+  items.forEach(function(it, i){
+    var d = document.createElement("div");
+    d.className = "bloque";
+    var tags = Object.keys(NOMBRE).map(function(k){
+      return '<button class="tag ' + k + '" data-i="' + i + '" data-k="' + k + '" ' +
+        'aria-pressed="' + (it.tipo === k) + '">' + NOMBRE[k] + "</button>";
+    }).join("");
+    d.innerHTML = "<p>" + it.texto.replace(/[&<>]/g, function(c){
+        return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]; }) + "</p>" +
+      '<div class="tags">' + tags +
+      '<button class="dur" data-dur="' + i + '">' + rotulo(it.min) + "</button>" +
+      '<button class="dur" data-borrar="' + i + '" aria-label="Borrar">✕</button></div>';
+    cont.appendChild(d);
+  });
+}
+function rotulo(m){
+  if (m < 60) return m + " min";
+  var h = Math.floor(m / 60), r = m % 60;
+  return h + " h" + (r ? " " + r : "");
+}
+
+$("bloques").addEventListener("click", function(e){
+  var b = e.target.closest("button");
+  if (!b) return;
+  if (b.dataset.k) { items[b.dataset.i].tipo = b.dataset.k; pintarBloques(); }
+  else if (b.dataset.dur) {
+    var it = items[b.dataset.dur];
+    it.min = DURS[(DURS.indexOf(it.min) + 1) % DURS.length];
+    pintarBloques();
+  } else if (b.dataset.borrar) {
+    items.splice(b.dataset.borrar, 1); pintarBloques();
+  }
+});
+
+$("ejemplo-btn").addEventListener("click", function(){ $("texto").value = EJEMPLO; });
+$("volver").addEventListener("click", function(){ $("p2").hidden = true; $("p1").hidden = false; });
+$("otra").addEventListener("click", function(){
+  $("texto").value = ""; items = [];
+  $("p3").hidden = true; $("p2").hidden = true; $("p1").hidden = false;
+  window.scrollTo(0, 0);
+});
+
+$("analizar").addEventListener("click", function(){
+  var t = $("texto").value.trim();
+  if (t.length < 20) { $("texto").focus(); return; }
+  items = partir(t).map(function(x){ return { texto: x, tipo: clasificar(x), min: duracion(x) }; });
+  pintarBloques();
+  $("p1").hidden = true; $("p2").hidden = false;
+  window.scrollTo(0, 0);
+});
+
+var textoDiag = "";
+$("ver").addEventListener("click", function(){
+  var tot = {}, suma = 0;
+  Object.keys(NOMBRE).forEach(function(k){ tot[k] = 0; });
+  items.forEach(function(it){ tot[it.tipo] += it.min; suma += it.min; });
+  if (!suma) return;
+  var pct = {};
+  Object.keys(tot).forEach(function(k){ pct[k] = Math.round(tot[k] / suma * 100); });
+
+  var barras = Object.keys(NOMBRE).filter(function(k){ return tot[k] > 0; }).map(function(k){
+    return '<div style="width:' + (tot[k] / suma * 100) + '%;background:' + COLOR[k] + '">' +
+      (pct[k] >= 9 ? pct[k] + "%" : "") + "</div>";
+  }).join("");
+  var clave = Object.keys(NOMBRE).map(function(k){
+    return '<span><i style="background:' + COLOR[k] + '"></i>' + NOMBRE[k] + " · " +
+      rotulo(tot[k]) + "</span>";
+  }).join("");
+
+  var horas = (suma / 60).toFixed(1).replace(".0", "");
+  var comparacion = pct.ped >= 24
+    ? "Estás <b>por encima</b> del promedio de casi 5.000 directores de la región, que dedican el 24% al liderazgo pedagógico."
+    : "El promedio de casi 5.000 directores de la región es <b>24%</b>. Tú estás en " +
+      (pct.ped === 0 ? "cero" : pct.ped + "%") + ".";
+
+  var fuga = ["del", "int", "suyo"].map(function(k){ return { k: k, m: tot[k] }; })
+    .sort(function(a, b){ return b.m - a.m; })[0];
+  var CONSEJO = {
+    del: "Es lo primero que se va. Esas son las tareas de las diez rutas del libro: el " +
+         "informe, los correos y los certificados se convierten en minutos.",
+    int: "Las interrupciones no se eliminan, se encauzan. Un bloque protegido de dos horas " +
+         "a la semana, avisado al equipo, y una frase para declinar sin quedar ausente.",
+    suyo: "Esto es tuyo y no se delega, pero sí se agenda. Si no tiene hora fija, se lo " +
+          "come lo urgente."
+  };
+
+  $("resultado").innerHTML =
+    '<h2 class="titular">De tus ' + horas + " horas, <span>" + pct.ped +
+    "%</span> fue liderazgo pedagógico</h2>" +
+    '<div class="barra">' + barras + "</div>" +
+    '<div class="clave">' + clave + "</div>" +
+    '<div class="tarjeta comparar"><h3>Contra la referencia</h3><p>' + comparacion +
+    '</p><p class="dato">PULS 2024 · El Director LIBRE, Banco Mundial</p></div>' +
+    '<div class="tarjeta"><h3>Tu fuga más grande: ' + NOMBRE[fuga.k].toLowerCase() +
+    ", " + rotulo(fuga.m) + "</h3><p>" + CONSEJO[fuga.k] + "</p></div>" +
+    '<div class="tarjeta"><h3>Lo que te llevas al taller</h3><p>Un día no es un patrón. ' +
+    "Haz el mismo ejercicio dos días más: si el número se repite, <b>ese es tu punto de " +
+    "partida</b>, y es contra ese número que se mide si el método sirvió.</p></div>";
+
+  textoDiag = "Mi día: " + horas + " horas registradas.\n" +
+    Object.keys(NOMBRE).map(function(k){
+      return "- " + NOMBRE[k] + ": " + rotulo(tot[k]) + " (" + pct[k] + "%)";
+    }).join("\n") +
+    "\nLiderazgo pedagógico: " + pct.ped + "% (referencia PULS 2024: 24%).\n" +
+    "Fuga más grande: " + NOMBRE[fuga.k] + ", " + rotulo(fuga.m) + ".";
+
+  $("p2").hidden = true; $("p3").hidden = false;
+  window.scrollTo(0, 0);
+});
+
+$("copiar").addEventListener("click", function(){
+  var b = $("copiar");
+  try {
+    navigator.clipboard.writeText(textoDiag).then(function(){
+      b.textContent = "Copiado";
+      setTimeout(function(){ b.textContent = "Copiar mi diagnóstico"; }, 1800);
+    }, function(){ b.textContent = "No se pudo copiar"; });
+  } catch (e) { b.textContent = "No se pudo copiar"; }
+});
+
+/* ------------------------------------------------------------- el dictado */
+(function(){
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { $("estado-mic").textContent = "Este navegador no dicta: escríbelo nomás."; return; }
+  var mic = $("mic"), rec = null, base = "";
+  mic.hidden = false;
+  mic.addEventListener("click", function(){
+    if (rec) { rec.stop(); return; }
+    rec = new SR();
+    rec.lang = "es-CL"; rec.continuous = true; rec.interimResults = true;
+    base = $("texto").value ? $("texto").value + "\n" : "";
+    rec.onresult = function(e){
+      var t = "";
+      for (var i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+      $("texto").value = base + t;
+    };
+    rec.onerror = function(e){
+      $("estado-mic").textContent = e.error === "not-allowed"
+        ? "No diste permiso al micrófono. Puedes escribirlo."
+        : "Se cortó el dictado. Prueba de nuevo o escríbelo.";
+    };
+    rec.onend = function(){ rec = null; mic.classList.remove("grabando"); mic.textContent = "🎤 Dictar"; };
+    rec.start();
+    mic.classList.add("grabando"); mic.textContent = "⏹ Detener";
+    $("estado-mic").textContent = "Grabando. Cuenta tu día en voz alta y toca detener.";
+  });
+})();
+</script>
+</body>
+</html>
