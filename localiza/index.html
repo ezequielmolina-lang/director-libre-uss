@@ -102,8 +102,13 @@ button:focus-visible{outline:3px solid var(--ambar);outline-offset:2px}
 .rapidas h3:first-child{margin-top:14px}
 .grupo{display:flex;flex-wrap:wrap;gap:8px}
 .grupo button{border:1px solid var(--linea);background:#fff;border-radius:999px;
-  padding:9px 14px;font:inherit;font-size:14px;font-weight:700;color:var(--texto);
-  cursor:pointer;display:inline-flex;align-items:center;gap:8px;line-height:1.2}
+  padding:9px 9px 9px 14px;font:inherit;font-size:14px;font-weight:700;color:var(--texto);
+  cursor:pointer;display:inline-flex;align-items:center;gap:9px;line-height:1.2}
+/* Cuanto suma cada toque, en el boton. Sin esto el primer toque es a ciegas:
+   el minuto recien aparecia al scrollear hasta la lista. */
+.grupo button i{font-style:normal;font-size:12px;font-weight:800;color:var(--texto2);
+  background:var(--suave);border-radius:999px;padding:3px 8px;flex:none;
+  font-variant-numeric:tabular-nums}
 .grupo button:active{transform:scale(.97)}
 .grupo button.puesta{border-color:var(--tinta);background:var(--suave)}
 .grupo button b{font-weight:800;color:var(--texto2);font-size:12px}
@@ -514,7 +519,8 @@ var items = [];
    tener que pensar en cuántos minutos fueron en total. */
 $("rapidas").innerHTML = CATALOGO.map(function(g, gi){
   return "<h3>" + g[0] + "</h3><div class=\"grupo\">" + g[1].map(function(a, ai){
-    return '<button data-g="' + gi + '" data-a="' + ai + '">' + a[0] + "</button>";
+    return '<button data-g="' + gi + '" data-a="' + ai + '">' + a[0] +
+      '<i>' + rotulo(a[2]) + "</i></button>";
   }).join("") + "</div>";
 }).join("");
 
@@ -559,7 +565,8 @@ function pintarAvance(){
     ? "Tu jornada ese día: <b>" + HORAS + " h</b>. Todavía no cuentas nada."
     : (falta > 10
         ? "Llevas <b>" + rotulo(suma) + "</b> de " + HORAS + " h. Faltan <b>" +
-          rotulo(falta) + "</b>."
+          rotulo(falta) + "</b>, y lo que no cuentes va a contar como tiempo " +
+          "<b>sin impacto directo</b>."
         : (falta < -10
             ? "Llevas <b>" + rotulo(suma) + "</b>: " + rotulo(-falta) +
               " más que tus horas de contrato. Así es el oficio."
@@ -658,6 +665,7 @@ $("otra").addEventListener("click", function(){
   items = []; analisisIA = "";
   pintarBloques(); pintarAvance();
   $("estado-ia").textContent = ""; $("aviso-nombres").hidden = true;
+  delete $("ver").dataset.avisado;
   [].forEach.call($("rapidas").querySelectorAll(".puesta"), function(b){
     b.classList.remove("puesta");
   });
@@ -860,6 +868,27 @@ function ponerAnalisis(){
 
 $("ver").addEventListener("click", function(){
   if (!items.length) { $("rapidas").scrollIntoView({ block: "start" }); return; }
+  /* NADIE SE ENTERA DESPUES. Si falta mas de una hora de la jornada, se dice
+     que va a pasar con ese tiempo y se le da la chance de completarlo. La
+     regla no cambia; cambia que la conoce antes de ver el numero. */
+  var falta = HORAS * 60 - items.reduce(function(a, it){ return a + it.min; }, 0);
+  if (falta > 60 && !$("ver").dataset.avisado) {
+    $("ver").dataset.avisado = "1";
+    var c = $("aviso-nombres");
+    c.hidden = false;
+    c.innerHTML = "<b>Te faltan " + rotulo(falta) + " por contar</b> de tu jornada de " +
+      HORAS + " h. Ese tiempo va a contar como <b>sin impacto directo</b>, porque lo " +
+      "que uno no recuerda suele ser lo fragmentado, y repartirlo de otra forma le " +
+      "daría mejor resultado a quien contó menos." +
+      '<div class="fila"><button class="fuerte" id="completar2">Agregar lo que falta</button>' +
+      '<button id="asi">Seguir así</button></div>';
+    $("completar2").addEventListener("click", function(){
+      c.hidden = true; $("rapidas").scrollIntoView({ block: "start" });
+    });
+    $("asi").addEventListener("click", function(){ c.hidden = true; $("ver").click(); });
+    c.scrollIntoView({ block: "center" });
+    return;
+  }
   var escritas = items.filter(function(it){ return it.libre && !it.fijo; });
   if (!escritas.length) {
     /* Nada escrito a mano: el número ya está completo, no hay por qué esperar
