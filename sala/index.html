@@ -124,6 +124,29 @@ function pintar(d){
       "directo." : "") + "</div></div>";
 }
 
+/* VACIAR LA SALA DESDE LA MISMA PANTALLA. Vaciarla necesita un DELETE, y un
+   navegador en la barra de direcciones manda GET: la instruccion de «pega esta
+   URL» no vacia nada, muestra los numeros. Asi que la pantalla lo hace ella:
+   se abre una sola vez con ?vaciar=<clave> al final, borra, y se saca la clave
+   de la direccion para que no quede a la vista del proyector. */
+(function(){
+  var m = location.search.match(/[?&]vaciar=([^&]+)/);
+  if (!m) return;
+  var clave = decodeURIComponent(m[1]);
+  history.replaceState(null, "", location.pathname);
+  document.getElementById("estado").textContent = "vaciando la sala…";
+  fetch(API + "?clave=" + encodeURIComponent(clave), { method: "DELETE" })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      document.getElementById("estado").textContent = d.borradas !== undefined
+        ? "sala vaciada (" + d.borradas + " resultados borrados). Ya se puede empezar."
+        : "no se pudo vaciar: " + (d.error || "sin respuesta");
+    })
+    .catch(function(){
+      document.getElementById("estado").textContent = "no se pudo vaciar, sin conexión";
+    });
+})();
+
 function traer(){
   fetch(API, { cache: "no-store" })
     .then(function(r){ return r.json(); })
