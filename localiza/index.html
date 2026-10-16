@@ -914,8 +914,8 @@ function afinar(){
       analisisIA = res.d.analisis || "";
       pintarBloques();
       $("estado-ia").textContent = tocadas
-        ? "Clasificó las " + tocadas + " que escribiste. El resto queda como lo " +
-          "trae el libro."
+        ? (tocadas === 1 ? "Clasificó la que escribiste." : "Clasificó las " +
+            tocadas + " que escribiste.") + " El resto queda como lo trae el libro."
         : "Miró tu día. Lo vas a ver en la radiografía.";
       b.textContent = "✨ Mirar de nuevo";
     }).catch(function(e){
