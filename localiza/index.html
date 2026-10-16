@@ -449,7 +449,13 @@ $("ver").addEventListener("click", function(){
   var tot = { alta: 0, media: 0, baja: 0 }, suma = 0;
   items.forEach(function(it){ tot[it.tipo] += it.min; suma += it.min; });
   if (!suma) return;
-  var jornada = HORAS * 60;
+  /* EL DENOMINADOR ES EL MAYOR ENTRE LA JORNADA DE CONTRATO Y LO REGISTRADO.
+     Con la jornada sola, un director que cuenta mas horas de las que tiene de
+     contrato sacaba «el 102% de tu dia», que parece un error y no se puede
+     proyectar. Con lo registrado solo, el que recuerda menos sale mejor. El
+     maximo de los dos conserva las dos cosas: nunca pasa de 100 y no premia
+     al que olvida. */
+  var jornada = Math.max(HORAS * 60, suma);
   var pct = {};
   ["alta", "media", "baja"].forEach(function(k){
     pct[k] = Math.round(tot[k] / jornada * 100);
