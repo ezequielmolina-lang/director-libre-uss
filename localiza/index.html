@@ -552,6 +552,16 @@ $("otra").addEventListener("click", function(){
   $("texto").value = ""; items = []; analisisIA = "";
   vinoDeAudio = false; $("revisa").hidden = true;
   $("analizar").textContent = "Clasificar mi día";
+  /* EL BOTON DE SUMAR QUEDABA MUERTO. Al sumar se deshabilita y pasa a decir
+     «Ya lo sumaste», y empezar de nuevo no lo tocaba: el segundo intento no
+     mandaba nada y, como el mensaje de la vez anterior seguia en pantalla,
+     decia «Listo» igual. Un director se iba creyendo que estaba contado.
+     Y si suma dos veces, el grupo cuenta dos: eso tambien se dice. */
+  $("sumar").disabled = false;
+  $("sumar").textContent = yaSumo ? "Sumar este resultado también" : "Sumar mi resultado al grupo";
+  $("estado-sala").textContent = yaSumo
+    ? "Ojo: ya sumaste un resultado antes. Si sumas este, el grupo cuenta dos."
+    : "";
   $("p3").hidden = true; $("p2").hidden = true; $("p1").hidden = true; $("p0").hidden = false;
   window.scrollTo(0, 0);
 });
@@ -570,7 +580,7 @@ $("analizar").addEventListener("click", function(){
 });
 
 /* ----------------------------------------------------------- el resultado */
-var textoDiag = "", analisisIA = "", ultimo = null;
+var textoDiag = "", analisisIA = "", ultimo = null, yaSumo = false;
 $("ver").addEventListener("click", function(){
   var tot = { alta: 0, media: 0, baja: 0 }, suma = 0;
   items.forEach(function(it){ tot[it.tipo] += it.min; suma += it.min; });
@@ -764,6 +774,7 @@ $("sumar").addEventListener("click", function(){
       int: 0, horas: ultimo.horas, cob: ultimo.cob })
   }).then(function(r){ return r.json(); }).then(function(d){
     if (d.ok) {
+      yaSumo = true;
       $("estado-sala").textContent = "Listo. Tu resultado está en el total del grupo, " +
         "sin tu nombre y sin tu relato.";
       b.textContent = "Ya lo sumaste";
