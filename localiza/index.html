@@ -146,7 +146,7 @@ footer a{color:var(--naranja)}
 
 <header><div class="env">
   <div class="ceja">El Director LIBRE · Banco Mundial · capítulo 5</div>
-  <h1>Tu radiografía <em>de ayer</em></h1>
+  <h1>Tu radiografía <em id="h-dia">de ayer</em></h1>
   <p>Dónde se escapa tu tiempo, y por qué. Toma cinco minutos.</p>
 </div></header>
 
@@ -363,6 +363,8 @@ $("horas").addEventListener("click", function(e){
   [].forEach.call($("horas").children, function(o){ o.setAttribute("aria-pressed", o === b); });
 });
 $("seguir").addEventListener("click", function(){
+  $("h-dia").textContent = DIA === "manana" ? "de hoy" :
+    (DIA === "viernes" ? "del viernes" : "de ayer");
   $("t-relato").textContent = "3. ¿Qué hiciste " + ETIQ[DIA] + "?";
   $("p0").hidden = true; $("p1").hidden = false; window.scrollTo(0, 0);
 });
