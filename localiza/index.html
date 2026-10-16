@@ -245,6 +245,8 @@ var LEX = {
     ["aula", "es trabajo de aula"],
     ["sala de clase", "es trabajo de sala"],
     ["clase de", "es tiempo en una clase"],
+    ["una clase", "es tiempo en una clase"],
+    ["la clase", "es tiempo en una clase"],
     ["retroaliment", "es retroalimentación a un docente"],
     ["acompañ", "es acompañamiento docente"],
     ["planificaci", "es trabajo sobre la planificación"],
@@ -287,6 +289,9 @@ var LEX = {
   ],
   baja: [
     ["informe", "es un informe"],
+    ["almor", "es el almuerzo"],
+    ["colación", "es la colación"],
+    ["colacion", "es la colación"],
     ["papel", "es papeleo"],
     ["firm", "son firmas"],
     ["acta", "es un acta"],
@@ -380,12 +385,36 @@ $("seguir").addEventListener("click", function(){
 $("atras0").addEventListener("click", function(){ $("p1").hidden = true; $("p0").hidden = false; });
 pintarHoras();
 
+/* LOS NUMEROS DICTADOS VIENEN EN LETRAS. Nadie dice «cuarenta minutos» y el
+   teclado escribe «40 min»: el dictado escribe «cuarenta minutos». Leyendo
+   solo digitos, esa linea caia al valor por defecto de 30 y la clase de 45
+   minutos pesaba un tercio menos de lo que duro. */
+var NUMS = { un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6,
+  siete: 7, ocho: 8, nueve: 9, diez: 10, once: 11, doce: 12, trece: 13, catorce: 14,
+  quince: 15, dieciseis: 16, "dieciséis": 16, diecisiete: 17, dieciocho: 18,
+  diecinueve: 19, veinte: 20, veinticinco: 25, treinta: 30, cuarenta: 40,
+  cincuenta: 50, sesenta: 60, noventa: 90 };
+var PAL = Object.keys(NUMS).sort(function(a, b){ return b.length - a.length; }).join("|");
+var RE_MIN = new RegExp("((?:" + PAL + ")(?:\\s+y\\s+(?:" + PAL + "))?)\\s*(?:minutos?|min\\b)", "i");
+var RE_HOR = new RegExp("((?:" + PAL + ")(?:\\s+y\\s+(?:" + PAL + "))?)\\s*(?:horas?|h\\b)", "i");
+function sumarPalabras(txt){
+  return txt.toLowerCase().split(/\s+y\s+|\s+/).reduce(function(a, w){
+    return a + (NUMS[w] || 0); }, 0);
+}
+
 function duracion(t){
   /* Lo explicito manda sobre lo vago: «toda la tarde … como dos horas» son dos
      horas, y si gana lo vago el bloque mas largo del dia queda inflado. */
   var s = t.toLowerCase(), m;
   if ((m = s.match(/(\d+)\s*(min\b|minutos)/))) return Math.min(300, parseInt(m[1], 10));
   if ((m = s.match(/(\d+)\s*(h\b|hora|horas)/))) return Math.min(300, parseInt(m[1], 10) * 60);
+  if ((m = s.match(RE_MIN))) return Math.min(300, sumarPalabras(m[1]));
+  if ((m = s.match(RE_HOR))) {
+    var h = sumarPalabras(m[1]) * 60;
+    if (/horas?\s+y\s+media/.test(s)) h += 30;
+    return Math.min(300, h);
+  }
+  if (/cuarto de hora/.test(s)) return 15;
   if (/hora y media/.test(s)) return 90;
   if (/media hora/.test(s)) return 30;
   if (/una hora/.test(s)) return 60;
@@ -418,7 +447,7 @@ function partir(texto){
      antes de las palabras con las que uno encadena el día al hablar. Si un
      corte queda raro, la línea se edita o se borra, que es justo el punto. */
   var cortes = /\s*,?\s*(?:y\s+)?(?=(?:después|despues|luego|más tarde|mas tarde|entonces|enseguida|acto seguido|al mediodía|al mediodia|en la mañana|en la manana|en la tarde)\b)/gi;
-  return texto.replace(cortes, "\\n").split(/\n+|(?<=[.;])\s+/)
+  return texto.replace(cortes, "\n").split(/\n+|(?<=[.;])\s+/)
     .map(function(x){ return x.trim(); })
     .filter(function(x){ return x.length > 8; })
     .slice(0, 40);
