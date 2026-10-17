@@ -161,8 +161,15 @@ function traer(){
       document.getElementById("estado").textContent = "sin conexión, reintentando";
     });
 }
+/* CADA 15 SEGUNDOS Y SOLO CON LA PESTAÑA A LA VISTA. Antes preguntaba cada 5
+   segundos sin parar, y el 2026-10-16 eso agotó el cupo gratis de Vercel Blob
+   en unas tres horas de proyector. Para una pantalla que se mira de lejos, 15
+   segundos no se notan; y si la pestaña está escondida no hay nadie mirando. */
 traer();
-setInterval(traer, 5000);
+setInterval(function(){ if (!document.hidden) traer(); }, 15000);
+document.addEventListener("visibilitychange", function(){
+  if (!document.hidden) traer();
+});
 </script>
 </body>
 </html>
